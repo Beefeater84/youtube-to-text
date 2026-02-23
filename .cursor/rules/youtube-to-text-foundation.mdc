@@ -1,0 +1,35 @@
+---
+description: Core product and tech stack constraints for youtube-to-text
+alwaysApply: true
+---
+
+# YouTube-to-Text Foundation
+
+## Product goals
+- Build SEO-first pages for transcript reading.
+- Allow everyone to read content; only authenticated users can create processing jobs.
+- Ship in small, releasable phases (incremental versions).
+
+## Core tech stack
+- Web: Next.js (App Router) + React 19 + TypeScript + Tailwind CSS.
+- Auth and DB: Supabase (Auth + Postgres).
+- Transcript files: store Markdown in S3-compatible storage; keep only URL + metadata in DB.
+- Long-running processing: separate worker service with queue (Redis + BullMQ).
+- Observability: basic error and queue monitoring (e.g., Sentry).
+
+## Architecture constraints
+- Keep content pages compatible with SSG/ISR for SEO and low serving cost.
+- Do not put heavy transcript/translation logic in request-response web handlers.
+- Use idempotent jobs with retry/backoff for pipeline stability.
+- Keep Markdown rendering pipeline deterministic and safe.
+
+## Delivery phases
+- v0.1: SEO pages + transcript rendering from storage.
+- v0.2: auth + job creation.
+- v0.3: worker pipeline (fetch, cleanup, structure, EN output, save).
+- v0.4+: translations, token ledger, payments, semantic search.
+
+## Implementation style
+- Apply YAGNI: avoid features not needed for current phase.
+- Prefer small PRs and release-ready increments.
+- Keep code comments in English.
