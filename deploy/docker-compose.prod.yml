@@ -1,0 +1,74 @@
+services:
+  reverse-proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - app-net
+
+  web:
+    image: "${WEB_IMAGE}:${WEB_IMAGE_TAG}"
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    expose:
+      - "3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/').then((res)=>process.exit(res.ok?0:1)).catch(()=>process.exit(1))"
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    networks:
+      - app-net
+
+  worker:
+    image: "${WORKER_IMAGE}:${WORKER_IMAGE_TAG}"
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      REDIS_URL: "${REDIS_URL}"
+      SENTRY_DSN: "${SENTRY_DSN_WORKER}"
+    depends_on:
+      redis:
+        condition: service_started
+    command: sh -c "${WORKER_COMMAND:-node dist/worker.js}"
+    networks:
+      - app-net
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-net
+
+volumes:
+  redis_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  app-net:
