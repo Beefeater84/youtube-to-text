@@ -21,6 +21,33 @@
 
 ---
 
+## Style References
+
+Source files: `reference/`
+
+### 1. `photo_2026-02-25_20-38-38.jpg`
+- **What:** Black-and-white cartoon character — a man in glasses, suit and tie
+- **Style cues:** Halftone dot textures (newspaper print reproduction), thick ink outlines, stipple shading, retro comic-book illustration, grain/noise on paper
+- **Use for:** Illustration style, decorative elements, character mascots, halftone patterns in backgrounds or cards
+
+### 2. `lunamom_preschool_boy_...png`
+- **What:** Crayon-style illustration of a small boy holding a strawberry
+- **Style cues:** Hand-drawn texture, rough crayon strokes, soft pencil outlines, warm naive illustration, childlike simplicity
+- **Use for:** Friendly/approachable mascot option, error pages, empty states, onboarding illustrations
+
+### 3. `task_01kj66gafxf6rr2jxadp96tf12_1771882231_img_1.webp`
+- **What:** (Could not decode — likely another character/illustration variant)
+- **Style cues:** Same design family as the other references
+
+### Visual principles from references:
+- **Halftone dots** — use CSS `radial-gradient` dot patterns to mimic newspaper print
+- **Thick outlines** — all illustrations and decorative elements use heavy black strokes
+- **Paper grain** — subtle noise overlay on backgrounds replicates aged newsprint
+- **Monochrome** — references are black-and-white or very muted; no saturated colors
+- **Hand-drawn feel** — imperfect, human, slightly rough edges
+
+---
+
 ## Approved Design Elements
 
 These elements were approved by the user and must be preserved:
@@ -136,6 +163,45 @@ border-bottom: 1px dashed #bbb;
 
 ---
 
+## Decorative Techniques
+
+### Paper Noise Texture (background overlay)
+```css
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg width='200' height='200'
+    xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence
+    type='fractalNoise' baseFrequency='0.75' numOctaves='4'
+    stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25'
+    filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  z-index: 9999;
+}
+```
+
+### Halftone Dot Pattern (decorative fills)
+```css
+background: radial-gradient(circle, #0a0a0a 1px, transparent 1px);
+background-size: 6px 6px;
+```
+
+### Dropcap
+```css
+float: left;
+font-family: 'Cormorant Garamond', serif;
+font-size: 4.2rem;
+font-weight: 700;
+line-height: 0.8;
+padding-right: 8px;
+padding-top: 4px;
+```
+
+---
+
 ## Pre-Delivery Checklist
 
 - [ ] No emojis used as icons
@@ -149,3 +215,5 @@ border-bottom: 1px dashed #bbb;
 - [ ] All body text uses Libre Baskerville (not decorative fonts)
 - [ ] Horizontal rules consistent with approved patterns
 - [ ] Paper background preserved
+- [ ] Monochrome only — no color accents
+- [ ] Halftone/noise textures match reference style
