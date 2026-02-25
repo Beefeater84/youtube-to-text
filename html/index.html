@@ -11,7 +11,6 @@
 </head>
 <body>
 
-  <!-- Hero Section -->
   <section class="hero">
 
     <!-- Top info strip -->
@@ -21,7 +20,6 @@
       <span class="hero__strip-item">PRICE: FREE</span>
     </div>
 
-    <!-- Thick rule -->
     <hr class="rule rule--double">
 
     <!-- Masthead -->
@@ -32,7 +30,7 @@
 
     <hr class="rule rule--double">
 
-    <!-- Info line -->
+    <!-- Dateline -->
     <div class="hero__dateline">
       <span>WEDNESDAY, FEBRUARY 25, 2026</span>
       <span class="hero__dateline-right">ALL THE TRANSCRIPTS FIT TO READ</span>
@@ -40,73 +38,101 @@
 
     <hr class="rule rule--thin">
 
-    <!-- Main content area -->
-    <div class="hero__content">
+    <!-- Headline + Lead -->
+    <div class="hero__intro">
+      <h2 class="hero__headline">Read, Don't Watch</h2>
+      <p class="hero__lead">
+        <span class="hero__dropcap">E</span>very YouTube video holds knowledge
+        trapped inside minutes of footage. Our service extracts transcripts,
+        cleans up errors, structures them into readable articles, and delivers
+        them in English or any language you choose.
+      </p>
+    </div>
 
-      <!-- Left column -->
-      <div class="hero__col hero__col--main">
-        <h2 class="hero__headline">Read, Don't Watch</h2>
-        <p class="hero__lead">
-          <span class="hero__dropcap">E</span>very YouTube video holds knowledge trapped inside minutes of footage. 
-          Our service extracts transcripts, cleans up errors, structures 
-          them into readable articles, and delivers them in English or any language you choose.
-        </p>
-        <p class="hero__body">
-          Skip the buffering. Skip the ads. Read at your own pace, 
-          search for what matters, and get to the point in seconds 
-          instead of sitting through a 40-minute video.
-        </p>
-        <div class="hero__cta-box">
-          <label class="hero__label" for="video-url">PASTE VIDEO URL BELOW</label>
-          <div class="hero__input-group">
-            <input 
-              type="url" 
-              id="video-url" 
-              class="hero__input" 
-              placeholder="https://youtu.be/..." 
-              autocomplete="off"
-            >
-            <button type="button" class="hero__btn">TRANSCRIBE</button>
-          </div>
-        </div>
+    <hr class="rule rule--thin">
+
+    <!-- CTA -->
+    <div class="hero__cta-box">
+      <label class="hero__label" for="video-url">PASTE VIDEO URL BELOW</label>
+      <div class="hero__input-group">
+        <input
+          type="url"
+          id="video-url"
+          class="hero__input"
+          placeholder="https://youtu.be/..."
+          autocomplete="off"
+        >
+        <button type="button" class="hero__btn">TRANSCRIBE</button>
+      </div>
+    </div>
+
+    <hr class="rule rule--thick">
+
+    <!-- Browse: Tags + Channels -->
+    <div class="browse">
+
+      <div class="browse__section">
+        <h3 class="browse__heading">Browse by Topic</h3>
+        <hr class="rule rule--thin">
+        <ul class="tags">
+          <li><a href="#" class="tag">Startups</a></li>
+          <li><a href="#" class="tag">Programming</a></li>
+          <li><a href="#" class="tag">Mathematics</a></li>
+          <li><a href="#" class="tag">Design</a></li>
+          <li><a href="#" class="tag">AI &amp; Machine Learning</a></li>
+          <li><a href="#" class="tag">Business</a></li>
+          <li><a href="#" class="tag">Science</a></li>
+          <li><a href="#" class="tag">Philosophy</a></li>
+          <li><a href="#" class="tag">History</a></li>
+          <li><a href="#" class="tag">Finance</a></li>
+          <li><a href="#" class="tag">Productivity</a></li>
+          <li><a href="#" class="tag">Psychology</a></li>
+        </ul>
       </div>
 
-      <!-- Right column -->
-      <div class="hero__col hero__col--side">
-        <div class="hero__side-block">
-          <h3 class="hero__side-heading">How It Works</h3>
-          <hr class="rule rule--thin">
-          <ol class="hero__steps">
-            <li>Paste any YouTube link</li>
-            <li>We fetch the transcript</li>
-            <li>AI cleans &amp; structures</li>
-            <li>Read as a proper article</li>
-          </ol>
-        </div>
+      <div class="browse__divider" aria-hidden="true"></div>
 
-        <div class="hero__side-block">
-          <h3 class="hero__side-heading">Latest Editions</h3>
-          <hr class="rule rule--thin">
-          <ul class="hero__editions">
-            <li>
-              <span class="hero__ed-title">Y Combinator: Startup Mistakes</span>
-              <span class="hero__ed-meta">12 min read</span>
-            </li>
-            <li>
-              <span class="hero__ed-title">3Blue1Brown: Linear Algebra</span>
-              <span class="hero__ed-meta">24 min read</span>
-            </li>
-            <li>
-              <span class="hero__ed-title">Fireship: React 19 Overview</span>
-              <span class="hero__ed-meta">5 min read</span>
-            </li>
-          </ul>
-        </div>
-
-        <!-- Halftone decorative block -->
-        <div class="hero__halftone-block" aria-hidden="true">
-          <div class="hero__halftone-circle"></div>
-        </div>
+      <div class="browse__section">
+        <h3 class="browse__heading">Browse by Channel</h3>
+        <hr class="rule rule--thin">
+        <ul class="channels">
+          <li>
+            <a href="#" class="channel">
+              <span class="channel__name">Y Combinator</span>
+              <span class="channel__count">48 transcripts</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="channel">
+              <span class="channel__name">3Blue1Brown</span>
+              <span class="channel__count">32 transcripts</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="channel">
+              <span class="channel__name">Fireship</span>
+              <span class="channel__count">91 transcripts</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="channel">
+              <span class="channel__name">Lex Fridman</span>
+              <span class="channel__count">127 transcripts</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="channel">
+              <span class="channel__name">Veritasium</span>
+              <span class="channel__count">64 transcripts</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="channel">
+              <span class="channel__name">The Futur</span>
+              <span class="channel__count">53 transcripts</span>
+            </a>
+          </li>
+        </ul>
       </div>
 
     </div>

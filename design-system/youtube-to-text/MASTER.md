@@ -7,197 +7,145 @@
 ---
 
 **Project:** YouTube to Text
-**Generated:** 2026-02-25 20:43:35
-**Category:** News/Media Platform
+**Updated:** 2026-02-25
+**Category:** Content / Transcript Reading Platform
+**Core UX priority:** Readability above everything else
 
 ---
 
-## Global Rules
+## Visual Identity
 
-### Color Palette
+**Style:** Brutalism + Old Newspaper
+**Mood:** Raw, editorial, stark, high contrast, printed matter, old press
+**Best For:** Content-heavy reading, editorial sites, transcript archives
 
-| Role | Hex | CSS Variable |
-|------|-----|--------------|
-| Primary | `#18181B` | `--color-primary` |
-| Secondary | `#27272A` | `--color-secondary` |
-| CTA/Accent | `#F8FAFC` | `--color-cta` |
-| Background | `#000000` | `--color-background` |
-| Text | `#FAFAFA` | `--color-text` |
+---
 
-**Color Notes:** Pure black + white contrast
+## Approved Design Elements
 
-### Typography
+These elements were approved by the user and must be preserved:
 
-- **Heading Font:** Plus Jakarta Sans
-- **Body Font:** Plus Jakarta Sans
-- **Mood:** friendly, modern, saas, clean, approachable, professional
-- **Google Fonts:** [Plus Jakarta Sans + Plus Jakarta Sans](https://fonts.google.com/share?selection.family=Plus+Jakarta+Sans:wght@300;400;500;600;700)
+1. **Paper background** — `#f5f0e8` with subtle SVG noise texture overlay
+2. **Large editorial headlines** — Cormorant Garamond, bold, clamp-sized
+3. **Horizontal rules** — double (3px + 1px), thin (1px), thick (4px) separators
+4. **Top info strip** — VOL / ESTABLISHED / PRICE in typewriter font
+5. **Masthead** — UnifrakturMaguntia blackletter, centered
+6. **Dateline** — date left, slogan right
+7. **Dropcap** — large first letter in Cormorant Garamond
+
+---
+
+## Color Palette
+
+| Role | Hex | Usage |
+|------|-----|-------|
+| Primary | `#0a0a0a` | Text, borders, fills |
+| Background | `#f5f0e8` | Page background (paper) |
+| Surface | `#ffffff` | CTA boxes, input backgrounds |
+| Muted text | `#333` / `#444` | Strip text, labels |
+| Dashed lines | `#bbb` / `#ccc` | List separators |
+
+**Rule:** Strictly black-and-white. No color accents.
+
+---
+
+## Typography
+
+| Role | Font | Weight | Usage |
+|------|------|--------|-------|
+| Masthead | UnifrakturMaguntia | 400 | Site title only |
+| Headlines | Cormorant Garamond | 600–700 | h1, h2, big headlines |
+| Body text | Libre Baskerville | 400–700 | Paragraphs, reading content |
+| Section headings | Libre Baskerville | 700 | h3, browse headings (readable!) |
+| Labels/meta | Special Elite | 400 | Dates, counts, labels, input |
 
 **CSS Import:**
 ```css
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=UnifrakturMaguntia&family=Special+Elite&display=swap');
 ```
 
-### Spacing Variables
-
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--space-xs` | `4px` / `0.25rem` | Tight gaps |
-| `--space-sm` | `8px` / `0.5rem` | Icon gaps, inline spacing |
-| `--space-md` | `16px` / `1rem` | Standard padding |
-| `--space-lg` | `24px` / `1.5rem` | Section padding |
-| `--space-xl` | `32px` / `2rem` | Large gaps |
-| `--space-2xl` | `48px` / `3rem` | Section margins |
-| `--space-3xl` | `64px` / `4rem` | Hero padding |
-
-### Shadow Depths
-
-| Level | Value | Usage |
-|-------|-------|-------|
-| `--shadow-sm` | `0 1px 2px rgba(0,0,0,0.05)` | Subtle lift |
-| `--shadow-md` | `0 4px 6px rgba(0,0,0,0.1)` | Cards, buttons |
-| `--shadow-lg` | `0 10px 15px rgba(0,0,0,0.1)` | Modals, dropdowns |
-| `--shadow-xl` | `0 20px 25px rgba(0,0,0,0.15)` | Hero images, featured cards |
+**IMPORTANT:** Do NOT use Cormorant Garamond or UnifrakturMaguntia for small/secondary headings — they are hard to read at small sizes. Use Libre Baskerville bold for anything below h2.
 
 ---
 
-## Component Specs
+## Layout Rules
+
+- `max-width: 960px` centered container
+- Sharp corners everywhere: `border-radius: 0`
+- Visible borders: `2-4px solid #0a0a0a`
+- No smooth gradients, no shadows, no blur
+- Two-column layouts use `2px solid` vertical dividers
+- Justified text with `hyphens: auto` for body content
+- `line-height: 1.7` for body text (readability first)
+
+---
+
+## Component Patterns
 
 ### Buttons
-
 ```css
-/* Primary Button */
-.btn-primary {
-  background: #F8FAFC;
-  color: white;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 600;
-  transition: all 200ms ease;
-  cursor: pointer;
-}
-
-.btn-primary:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
-
-/* Secondary Button */
-.btn-secondary {
-  background: transparent;
-  color: #18181B;
-  border: 2px solid #18181B;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 600;
-  transition: all 200ms ease;
-  cursor: pointer;
-}
+border: 2px solid #0a0a0a;
+border-radius: 0;
+background-color: #0a0a0a;
+color: #f5f0e8;
+cursor: pointer;
+transition: background-color 0.15s, color 0.15s;
+/* Hover: invert colors */
 ```
 
-### Cards
-
+### CTA Box (Classified Ad Style)
 ```css
-.card {
-  background: #000000;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: var(--shadow-md);
-  transition: all 200ms ease;
-  cursor: pointer;
-}
-
-.card:hover {
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-2px);
-}
+border: 3px solid #0a0a0a;
+background-color: #fff;
+/* ::before label badge in black */
 ```
 
-### Inputs
-
+### Tags
 ```css
-.input {
-  padding: 12px 16px;
-  border: 1px solid #E2E8F0;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: border-color 200ms ease;
-}
-
-.input:focus {
-  border-color: #18181B;
-  outline: none;
-  box-shadow: 0 0 0 3px #18181B20;
-}
+border: 2px solid #0a0a0a;
+padding: 6px 12px;
+/* Hover: fill black, text white */
 ```
 
-### Modals
-
+### Channel List
 ```css
-.modal-overlay {
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-}
-
-.modal {
-  background: white;
-  border-radius: 16px;
-  padding: 32px;
-  box-shadow: var(--shadow-xl);
-  max-width: 500px;
-  width: 90%;
-}
+border-bottom: 1px dashed #bbb;
+/* Name left (bold), count right (typewriter) */
+/* Hover: subtle background tint */
 ```
 
----
-
-## Style Guidelines
-
-**Style:** Exaggerated Minimalism
-
-**Keywords:** Bold minimalism, oversized typography, high contrast, negative space, loud minimal, statement design
-
-**Best For:** Fashion, architecture, portfolios, agency landing pages, luxury brands, editorial
-
-**Key Effects:** font-size: clamp(3rem 10vw 12rem), font-weight: 900, letter-spacing: -0.05em, massive whitespace
-
-### Page Pattern
-
-**Pattern Name:** Newsletter / Content First
-
-- **Conversion Strategy:**  typewriter effect,  subtle fade-in, Single field form (Email only). Show 'Join X, 000 readers'. Read sample link.
-- **CTA Placement:** Hero inline form + Sticky header form
-- **Section Order:** 1. Hero (Value Prop + Form), 2. Recent Issues/Archives, 3. Social Proof (Subscriber count), 4. About Author
+### Horizontal Rules
+```css
+.rule--double { border-top: 3px; border-bottom: 1px; height: 6px; }
+.rule--thin   { border-top: 1px; }
+.rule--thick  { border-top: 4px; }
+```
 
 ---
 
 ## Anti-Patterns (Do NOT Use)
 
-- ❌ Cluttered layout
-- ❌ Slow loading
-
-### Additional Forbidden Patterns
-
-- ❌ **Emojis as icons** — Use SVG icons (Heroicons, Lucide, Simple Icons)
-- ❌ **Missing cursor:pointer** — All clickable elements must have cursor:pointer
-- ❌ **Layout-shifting hovers** — Avoid scale transforms that shift layout
-- ❌ **Low contrast text** — Maintain 4.5:1 minimum contrast ratio
-- ❌ **Instant state changes** — Always use transitions (150-300ms)
-- ❌ **Invisible focus states** — Focus states must be visible for a11y
+- No emojis as icons — use SVG only
+- No border-radius (ever)
+- No gradients or shadows
+- No smooth/glossy effects
+- No color — strictly monochrome
+- No decorative fonts for readable content (use Libre Baskerville)
+- No layout-shifting hover effects
+- No transitions longer than 300ms
 
 ---
 
 ## Pre-Delivery Checklist
 
-Before delivering any UI code, verify:
-
-- [ ] No emojis used as icons (use SVG instead)
-- [ ] All icons from consistent icon set (Heroicons/Lucide)
+- [ ] No emojis used as icons
 - [ ] `cursor-pointer` on all clickable elements
-- [ ] Hover states with smooth transitions (150-300ms)
-- [ ] Light mode: text contrast 4.5:1 minimum
+- [ ] Hover states with smooth transitions (150–300ms)
+- [ ] Text contrast 4.5:1 minimum
 - [ ] Focus states visible for keyboard navigation
 - [ ] `prefers-reduced-motion` respected
 - [ ] Responsive: 375px, 768px, 1024px, 1440px
-- [ ] No content hidden behind fixed navbars
 - [ ] No horizontal scroll on mobile
+- [ ] All body text uses Libre Baskerville (not decorative fonts)
+- [ ] Horizontal rules consistent with approved patterns
+- [ ] Paper background preserved
