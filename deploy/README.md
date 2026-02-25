@@ -7,6 +7,8 @@
 - `worker`: BullMQ worker process.
 - `redis`: Queue backend.
 
+Application source and npm project are located in `src/`.
+
 ## One-time server setup
 
 1. Install Docker Engine and Docker Compose plugin.
