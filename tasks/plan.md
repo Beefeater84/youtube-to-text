@@ -65,6 +65,28 @@ flowchart LR
 - **SEO регресс:** контентные страницы держать SSG/ISR, минимум client-only блоков.
 - **Стабильность пайплайна:** идемпотентные job-и и повторяемые шаги с retry/backoff.
 
-## Целевые артефакты для следующего шага
-- План-документ в `docs/plans/YYYY-MM-DD-youtube-to-text-design.md`.
-- Детальный implementation plan по фазе **v0.1** (отдельно), затем выполнение и релиз.
+## Прогресс
+
+### Готово: Bootstrap (pre-v0.1)
+- Next.js 16 + React 19 + Tailwind 4 — `src/` (App Router).
+- Docker-конфиги для prod: `deploy/docker-compose.prod.yml` (Caddy, web, worker, redis).
+- CI/CD: `.github/workflows/deploy.yml`.
+- Дизайн-система: `design-system/youtube-to-text/MASTER.md`.
+
+### Готово: Supabase local (2026-03-02)
+- `supabase init` → `supabase/config.toml` (Postgres 17, Auth, Studio, Storage).
+- `supabase start` — локальный Supabase в Docker (Studio на `:54323`, API на `:54321`, DB на `:54322`).
+- Первая миграция `supabase/migrations/20260302155135_initial_schema.sql`:
+  - `channels` (youtube_id, title, slug, thumbnail_url).
+  - `transcripts` (youtube_video_id, title, slug, status, markdown_url, language, duration_seconds).
+  - RLS: публичное чтение, индексы по slug/channel_id/status, триггер `updated_at`.
+- Supabase-клиенты в `src/lib/supabase/`:
+  - `server.ts` — Server Components (cookie-based, `@supabase/ssr`).
+  - `client.ts` — Client Components (`createBrowserClient`).
+  - `admin.ts` — service role (обход RLS, для worker).
+- `src/middleware.ts` — обновление сессии (deprecated в Next.js 16, заменить на `proxy` в v0.2).
+- `src/.env.local` — локальные ключи (не в git).
+- Подключение проверено: Server Component → `select` из `channels` → OK.
+
+### Следующий шаг
+- Фаза **v0.1**: SEO-страницы (главная, транскрипт, канал), SSG/ISR, sitemap, robots, schema.org, рендер Markdown.
