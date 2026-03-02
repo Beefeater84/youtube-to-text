@@ -88,5 +88,24 @@ flowchart LR
 - `src/.env.local` — локальные ключи (не в git).
 - Подключение проверено: Server Component → `select` из `channels` → OK.
 
+### Готово: v0.1 — SEO-ядро и чтение контента (2026-03-02)
+- Дизайн-система реализована в CSS: Brutalism + Old Newspaper (Tailwind v4 `@theme`).
+  - Шрифты: UnifrakturMaguntia (masthead), Cormorant Garamond (headlines), Libre Baskerville (body), Special Elite (meta).
+  - Цвета: `#0a0a0a` (ink), `#f5f0e8` (paper), `#ffffff` (surface).
+  - Paper noise texture overlay, horizontal rules (double/thin/thick/dashed), dropcap, halftone.
+  - Markdown prose styling (`.prose-newspaper`).
+- Layout: газетный masthead (VOL / EST / FREE), dateline, header + footer.
+- Публичные страницы:
+  - `/` — Latest Transcripts + Browse by Channel (ISR 1h).
+  - `/transcripts/[slug]` — рендер Markdown из S3 + schema.org Article (ISR 24h).
+  - `/channels/[slug]` — список транскриптов канала + schema.org CollectionPage (ISR 1h).
+- SEO: `sitemap.ts` (динамическая), `robots.ts`, canonical URL, `generateMetadata`, JSON-LD.
+- SSG: `generateStaticParams` для transcript и channel slug-ов.
+- Data layer: `lib/data/transcripts.ts`, `lib/data/channels.ts`, `lib/markdown.ts`.
+- Supabase: `static.ts` — клиент без cookies для build-time (generateStaticParams, sitemap).
+- Types: `lib/types.ts` (Channel, Transcript, TranscriptWithChannel, ChannelWithTranscripts).
+- Components: Header, Footer, TranscriptCard, HorizontalRule, MarkdownContent.
+- `next.config.ts`: remotePatterns для YouTube-тамбнейлов.
+
 ### Следующий шаг
-- Фаза **v0.1**: SEO-страницы (главная, транскрипт, канал), SSG/ISR, sitemap, robots, schema.org, рендер Markdown.
+- Фаза **v0.2**: авторизация (Supabase Auth), форма добавления YouTube URL, создание задач со статусами.
