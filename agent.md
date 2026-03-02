@@ -25,9 +25,30 @@
 ## Storage
 
 - Storing full video texts in the database is too expensive.
-- **Translations:** Save as Markdown (`.md`) files and store them on S3.
-- **Database:** Store only the link/URL to the file, not the content.
-- **Frontend:** Upload the file and render it as MD components (markdown-rendered UI).
+- **Provider:** Supabase Storage (S3-compatible, built-in CDN, same project as Auth/DB).
+- **Bucket:** `transcripts`, **public** (anyone can read without auth — needed for SEO pages).
+- **Translations:** Save as Markdown (`.md`) files.
+- **Database:** Store only video metadata (video_id, lang list, etc.), not file URLs — URLs are deterministic.
+- **Frontend:** Fetch the `.md` file by URL and render it as markdown components.
+
+### File path convention
+
+Path is built purely from `video_id` + `lang`, no extra lookups needed:
+
+```
+transcripts/{videoId[0:2]}/{videoId}/{lang}.md
+```
+
+- First 2 characters of `videoId` create a shard directory (~4 000 possible shards).
+- All translations for one video live in the same folder.
+- Example: video `IdoVd4XHbDE`, English → `transcripts/Id/IdoVd4XHbDE/en.md`
+- Example: video `IdoVd4XHbDE`, Russian  → `transcripts/Id/IdoVd4XHbDE/ru.md`
+
+Helper to build the path:
+
+```
+buildTranscriptPath(videoId, lang) → `${videoId.slice(0,2)}/${videoId}/${lang}.md`
+```
 
 ---
 
