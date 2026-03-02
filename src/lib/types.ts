@@ -9,6 +9,13 @@ export interface Channel {
   updated_at: string;
 }
 
+export interface Tag {
+  id: string;
+  name: string;
+  slug: string;
+  created_at: string;
+}
+
 export interface Transcript {
   id: string;
   channel_id: string;
@@ -26,10 +33,19 @@ export interface Transcript {
   updated_at: string;
 }
 
+export interface ChannelWithTags extends Channel {
+  tags: Tag[];
+}
+
 export interface TranscriptWithChannel extends Transcript {
   channels: Channel;
 }
 
 export interface ChannelWithTranscripts extends Channel {
   transcripts: Transcript[];
+}
+
+export interface ChannelWithTranscriptsAndTags extends Channel {
+  transcripts: Transcript[];
+  tags: Tag[];
 }

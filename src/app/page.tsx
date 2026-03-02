@@ -1,9 +1,12 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { getPublishedTranscripts } from '@/lib/data/transcripts';
 import { getChannels } from '@/lib/data/channels';
+import { getTags } from '@/lib/data/tags';
 import { TranscriptCard } from '@/components/transcript-card';
 import { HorizontalRule } from '@/components/horizontal-rule';
+import { HeroIntro } from '@/components/hero-intro';
+import { HeroCta } from '@/components/hero-cta';
+import { BrowseSection } from '@/components/browse-section';
 
 export const revalidate = 3600;
 
@@ -12,15 +15,38 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const [transcripts, channels] = await Promise.all([
+  const [transcripts, channels, tags] = await Promise.all([
     getPublishedTranscripts(20),
     getChannels(),
+    getTags(),
   ]);
 
   return (
     <>
+      {/* Hero: headline + lead */}
+      <HeroIntro />
+
+      <HorizontalRule variant="thin" />
+
+      {/* CTA: paste URL */}
+      <HeroCta />
+
+      <HorizontalRule variant="thick" />
+
+      {/* Browse: tags + channels */}
+      <BrowseSection tags={tags} channels={channels} />
+
+      <HorizontalRule variant="thick" />
+
+      {/* Bottom strip */}
+      <p className="text-center font-meta text-[0.65rem] tracking-[0.15em] uppercase text-muted-light py-3">
+        Free to read &middot; Open to all &middot; No ads
+      </p>
+
+      <HorizontalRule variant="double" />
+
       {/* Latest transcripts */}
-      <section>
+      <section className="mt-8">
         <h2 className="font-headline font-bold text-[clamp(1.6rem,3.5vw,2.4rem)] mb-1">
           Latest Transcripts
         </h2>
@@ -41,38 +67,6 @@ export default async function HomePage() {
               No transcripts have been published yet. Check back soon.
             </p>
           </div>
-        )}
-      </section>
-
-      <HorizontalRule variant="double" />
-
-      {/* Browse by channel */}
-      <section className="mt-8">
-        <h2 className="font-headline font-bold text-[clamp(1.4rem,3vw,2rem)] mb-1">
-          Browse by Channel
-        </h2>
-        <HorizontalRule variant="thick" />
-
-        {channels.length > 0 ? (
-          <ul>
-            {channels.map((ch) => (
-              <li
-                key={ch.id}
-                className="flex justify-between items-baseline py-3 border-b border-dashed border-divider last:border-b-0"
-              >
-                <Link
-                  href={`/channels/${ch.slug}`}
-                  className="font-body font-bold hover:opacity-60 transition-opacity duration-150"
-                >
-                  {ch.title}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="py-8 text-center font-meta text-sm text-muted">
-            No channels yet.
-          </p>
         )}
       </section>
     </>
