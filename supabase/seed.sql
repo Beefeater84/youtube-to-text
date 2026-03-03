@@ -180,39 +180,52 @@ begin
 
   -------------------------------------------------------
   -- Transcripts (only for Nate B. Jones for now)
+  -- Three transcripts have sample markdown files in web/public/sample-transcripts/
   -------------------------------------------------------
   insert into public.transcripts
-    (channel_id, youtube_video_id, title, description, thumbnail_url, slug, language, duration_seconds, status, published_at)
+    (channel_id, youtube_video_id, title, description, thumbnail_url, slug, language, duration_seconds, markdown_url, status, published_at)
   values
     (ch_nate, 'dQw4w9WgXcQ', 'How I Built a SaaS in 30 Days With No Budget',
      'A step-by-step walkthrough of launching a micro-SaaS from idea to first paying customer in one month.',
      'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
-     'how-i-built-a-saas-in-30-days', 'en', 1245, 'done', '2026-01-15T10:00:00Z'),
+     'how-i-built-a-saas-in-30-days', 'en', 1245,
+     '/sample-transcripts/how-i-built-a-saas-in-30-days.md',
+     'done', '2026-01-15T10:00:00Z'),
 
     (ch_nate, 'Kp7eSUU9oy8', 'Why Most Developers Fail at Marketing',
      'Technical founders often skip marketing entirely. Here is what actually works when you have zero audience.',
      'https://i.ytimg.com/vi/Kp7eSUU9oy8/hqdefault.jpg',
-     'why-most-developers-fail-at-marketing', 'en', 934, 'done', '2026-01-22T10:00:00Z'),
+     'why-most-developers-fail-at-marketing', 'en', 934,
+     null,
+     'done', '2026-01-22T10:00:00Z'),
 
     (ch_nate, 'L_jWHffIx5E', 'The Database Nobody Talks About',
      'SQLite is secretly powering more applications than Postgres and MySQL combined. Let me show you why.',
      'https://i.ytimg.com/vi/L_jWHffIx5E/hqdefault.jpg',
-     'the-database-nobody-talks-about', 'en', 1580, 'done', '2026-02-03T10:00:00Z'),
+     'the-database-nobody-talks-about', 'en', 1580,
+     '/sample-transcripts/the-database-nobody-talks-about.md',
+     'done', '2026-02-03T10:00:00Z'),
 
     (ch_nate, 'ZmKbFa5gkGY', 'I Replaced My Entire Backend With Edge Functions',
      'Moving from a traditional Node.js server to Supabase Edge Functions. What went right, what broke, and the surprising cost difference.',
      'https://i.ytimg.com/vi/ZmKbFa5gkGY/hqdefault.jpg',
-     'replaced-backend-with-edge-functions', 'en', 1120, 'done', '2026-02-10T10:00:00Z'),
+     'replaced-backend-with-edge-functions', 'en', 1120,
+     null,
+     'done', '2026-02-10T10:00:00Z'),
 
     (ch_nate, 'TnGl01FkMMo', 'Pricing Your Product: The Math Behind $9 vs $29',
      'A deep dive into pricing psychology, unit economics, and why most indie hackers undercharge.',
      'https://i.ytimg.com/vi/TnGl01FkMMo/hqdefault.jpg',
-     'pricing-your-product-math', 'en', 1410, 'done', '2026-02-17T10:00:00Z'),
+     'pricing-your-product-math', 'en', 1410,
+     null,
+     'done', '2026-02-17T10:00:00Z'),
 
     (ch_nate, 'VYOjWnS4cMY', 'The Tech Stack That Prints Money',
      'After building twelve products I have settled on one stack. Here is exactly what it is and why.',
      'https://i.ytimg.com/vi/VYOjWnS4cMY/hqdefault.jpg',
-     'tech-stack-that-prints-money', 'en', 1690, 'done', '2026-02-24T10:00:00Z')
+     'tech-stack-that-prints-money', 'en', 1690,
+     '/sample-transcripts/tech-stack-that-prints-money.md',
+     'done', '2026-02-24T10:00:00Z')
 
   on conflict (youtube_video_id) do nothing;
 
