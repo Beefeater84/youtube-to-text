@@ -1,7 +1,0 @@
-.next/
-out/
-dist/
-coverage/
-*.log
-.env.local
-.env*.local
