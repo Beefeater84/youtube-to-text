@@ -1,8 +1,9 @@
 name: Failed Jobs Alert
 
 on:
-  schedule:
-    - cron: "*/5 * * * *"
+  # Disabled until infrastructure is ready. Re-enable by uncommenting the schedule below.
+  # schedule:
+  #   - cron: "*/5 * * * *"
   workflow_dispatch:
 
 jobs:
