@@ -158,3 +158,6 @@ flowchart LR
 ### Бэклог: Observability (после v0.3)
 1. **Sentry для worker** — подключить `@sentry/node` в `worker/src/index.ts`. Инфраструктура готова (`SENTRY_DSN_WORKER` уже передаётся в docker-compose), осталось инициализировать SDK и обернуть pipeline в error capture. Даст push/email-уведомления о любых ошибках worker-а.
 2. **Healthcheck heartbeat** — worker периодически пингует внешний сервис (Healthchecks.io, бесплатный план). Если пинг пропал — алерт. Ловит и краши, и зависания (когда процесс жив, но не работает).
+
+### Бэклог: Worker pipeline (после v0.3)
+1. **Замена библиотеки получения субтитров** — текущая `youtube-transcript` (v1.2.1) ненадёжна: не находит субтитры у видео, где они есть. Исследовать и выбрать более надёжную альтернативу (например, `youtubei.js`, прямой парсинг YouTube innertube API, или серверный yt-dlp).
