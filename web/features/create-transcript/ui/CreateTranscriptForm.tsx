@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/libs/supabase/client";
+import { submitTranscriptJob } from "../api/submit-job";
 import { LanguageSelect } from "./LanguageSelect";
 
 interface CreateTranscriptFormProps {
@@ -10,7 +10,8 @@ interface CreateTranscriptFormProps {
 
 /**
  * Form for submitting a YouTube URL for transcription.
- * Creates a transcript record in the database with status "queued".
+ * Calls the submitTranscriptJob server action to validate the URL,
+ * fetch metadata, and create a transcript record.
  * Used on the /dashboard page, available only to authenticated users.
  */
 export function CreateTranscriptForm({
@@ -18,7 +19,9 @@ export function CreateTranscriptForm({
 }: CreateTranscriptFormProps) {
   const [url, setUrl] = useState("");
   const [languages, setLanguages] = useState<string[]>(preferredLanguages);
-  const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
+  const [status, setStatus] = useState<
+    "idle" | "submitting" | "success" | "error"
+  >("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
   const extractVideoId = (input: string): string | null => {
@@ -51,43 +54,17 @@ export function CreateTranscriptForm({
 
     setStatus("submitting");
 
-    try {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    const result = await submitTranscriptJob(videoId, languages);
 
-      if (!user) {
-        setErrorMessage("You must be signed in.");
-        setStatus("error");
-        return;
-      }
-
-      const slug = `${videoId}-${Date.now()}`;
-
-      const { error } = await supabase.from("transcripts").insert({
-        youtube_video_id: videoId,
-        title: `Processing: ${videoId}`,
-        slug,
-        status: "queued",
-        language: "en",
-        user_id: user.id,
-        channel_id: null,
-      });
-
-      if (error) {
-        setErrorMessage(error.message);
-        setStatus("error");
-        return;
-      }
-
-      setUrl("");
-      setStatus("success");
-      setTimeout(() => setStatus("idle"), 3000);
-    } catch {
-      setErrorMessage("Something went wrong. Please try again.");
+    if (!result.success) {
+      setErrorMessage(result.error ?? "Something went wrong.");
       setStatus("error");
+      return;
     }
+
+    setUrl("");
+    setStatus("success");
+    setTimeout(() => setStatus("idle"), 3000);
   };
 
   return (

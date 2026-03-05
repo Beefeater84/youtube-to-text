@@ -47,26 +47,15 @@ services:
       - .env
     environment:
       NODE_ENV: production
-      REDIS_URL: "${REDIS_URL}"
+      SUPABASE_URL: "${SUPABASE_URL}"
+      SUPABASE_SERVICE_ROLE_KEY: "${SUPABASE_SERVICE_ROLE_KEY}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY}"
       SENTRY_DSN: "${SENTRY_DSN_WORKER}"
-    depends_on:
-      redis:
-        condition: service_started
-    command: sh -c "${WORKER_COMMAND:-node dist/worker.js}"
-    networks:
-      - app-net
-
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    command: redis-server --save 60 1 --loglevel warning
-    volumes:
-      - redis_data:/data
+    command: sh -c "${WORKER_COMMAND:-node dist/index.js}"
     networks:
       - app-net
 
 volumes:
-  redis_data:
   caddy_data:
   caddy_config:
 

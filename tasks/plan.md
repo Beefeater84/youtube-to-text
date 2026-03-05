@@ -6,8 +6,8 @@
 ## Технический стек (базовый)
 - **Frontend/Web:** `Next.js` (App Router) + `React 19` + `TypeScript` + `Tailwind CSS`.
 - **Auth/DB:** `Supabase` (Postgres + Auth).
-- **Файлы транскриптов:** S3-совместимое хранилище (AWS S3/Cloudflare R2), в БД хранить только URL и метаданные.
-- **Долгие задачи:** отдельный `worker`-сервис (Node.js) + очередь (`Redis + BullMQ`), чтобы не упираться в таймауты веб-слоя.
+- **Файлы транскриптов:** Supabase Storage (публичный бакет), в БД хранить только URL и метаданные. Путь: `transcripts/{shard}/{videoId}/{lang}.md`.
+- **Долгие задачи:** отдельный `worker`-сервис (Node.js) + Postgres-as-queue (`FOR UPDATE SKIP LOCKED`), чтобы не упираться в таймауты веб-слоя.
 - **AI/LLM шаги:** cleanup/структурирование/перевод через отдельные воркеры с ретраями и идемпотентностью.
 - **Deploy:** self-host на VDS (Docker Compose: `next-app`, `worker`, `redis`, reverse proxy `Caddy/Nginx`).
 - **Мониторинг:** Sentry + базовые метрики очереди/ошибок.
@@ -36,7 +36,7 @@ flowchart LR
 - **v0.2 — Авторизация и создание задач**
   - Регистрация/логин через Supabase Auth.
   - Форма добавления YouTube URL (только для авторизованных).
-  - Создание записи задачи со статусами (`queued/processing/done/failed`).
+  - Создание записи задачи со статусами (`pending/queued/processing/done/failed`).
 - **v0.3 — Worker и пайплайн обработки**
   - Отдельный worker с очередью и ретраями.
   - Шаги: transcript fetch -> cleanup -> sections+headings -> EN output -> сохранение `.md` в S3.
@@ -68,7 +68,7 @@ flowchart LR
 ## Прогресс
 
 ### Готово: Bootstrap (pre-v0.1)
-- Next.js 16 + React 19 + Tailwind 4 — `src/` (App Router).
+- Next.js 16 + React 19 + Tailwind 4 — `web/` (App Router, FSD structure).
 - Docker-конфиги для prod: `deploy/docker-compose.prod.yml` (Caddy, web, worker, redis).
 - CI/CD: `.github/workflows/deploy.yml`.
 - Дизайн-система: `design-system/youtube-to-text/MASTER.md`.
@@ -80,12 +80,17 @@ flowchart LR
   - `channels` (youtube_id, title, slug, thumbnail_url).
   - `transcripts` (youtube_video_id, title, slug, status, markdown_url, language, duration_seconds).
   - RLS: публичное чтение, индексы по slug/channel_id/status, триггер `updated_at`.
-- Supabase-клиенты в `src/lib/supabase/`:
+- Миграция `supabase/migrations/20260302192852_add_tags.sql`:
+  - `tags` (name, slug) — теги каналов.
+  - `channel_tags` (channel_id, tag_id) — many-to-many связь.
+  - RLS: публичное чтение.
+- Supabase-клиенты в `web/libs/supabase/`:
   - `server.ts` — Server Components (cookie-based, `@supabase/ssr`).
   - `client.ts` — Client Components (`createBrowserClient`).
   - `admin.ts` — service role (обход RLS, для worker).
-- `src/middleware.ts` — обновление сессии (deprecated в Next.js 16, заменить на `proxy` в v0.2).
-- `src/.env.local` — локальные ключи (не в git).
+  - `static.ts` — клиент без cookies для build-time (generateStaticParams, sitemap).
+- `web/middleware.ts` — обновление сессии (deprecated в Next.js 16, заменить на `proxy` в v0.2).
+- `.env` — локальные ключи (не в git).
 - Подключение проверено: Server Component → `select` из `channels` → OK.
 
 ### Готово: v0.1 — SEO-ядро и чтение контента (2026-03-02)
@@ -118,7 +123,7 @@ flowchart LR
   - `entities/profile/` — тип Profile + API `getCurrentProfile`.
   - `features/auth/` — SignInButton, SignOutButton, UserMenu (Google OAuth flow).
   - `features/create-transcript/` — форма (YouTube URL + мультиселект языков, EN всегда включён).
-  - `widgets/dashboard/` — DashboardJobList + StatusBadge (queued/processing/done/failed).
+  - `widgets/dashboard/` — DashboardJobList + StatusBadge (pending/queued/processing/done/failed).
   - `widgets/auth-cta/` — CTA-блок «Transcribe Your Own Videos» на страницах транскриптов.
   - `shared/ui/` — Header (с auth state), HeaderAuth, Footer (вынесены в layout).
 - Новые маршруты:
@@ -130,5 +135,22 @@ flowchart LR
 - `app/transcripts/[slug]/page.tsx` — добавлен AuthCTA для неавторизованных пользователей.
 - Google OAuth ключи хранятся в `.env` корня проекта (не в git).
 
+### В работе: v0.3 — Worker и пайплайн обработки (2026-03-05)
+- Решения: Postgres-as-queue (без Redis), OpenAI GPT-4o-mini, Supabase Storage.
+- Миграция `supabase/migrations/20260305180000_worker_fields.sql`:
+  - `retry_count`, `error_message`, `started_at` в `transcripts`.
+  - `channel_id` стал nullable (баг-фикс v0.2).
+  - RPC: `grab_pending_transcript`, `increment_retry_and_fail`, `recover_stale_jobs`.
+- Server Action `web/features/create-transcript/api/submit-job.ts`:
+  - YouTube oEmbed для метаданных, find/create channel, insert transcript (status=pending).
+  - Форма обновлена: Server Action вместо прямого client-side insert.
+- Worker сервис `worker/`:
+  - Polling loop с graceful shutdown (SIGINT/SIGTERM).
+  - Pipeline: fetch-transcript → process-with-llm → generate-markdown → upload-to-storage.
+  - Конфиг: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, OPENAI_API_KEY.
+- Docker: убран Redis, worker использует Postgres-as-queue.
+  - `deploy/docker-compose.prod.yml`: удалён redis сервис, обновлён worker.
+  - `deploy/docker/worker.Dockerfile`: обновлён для `worker/` директории.
+
 ### Следующий шаг
-- Фаза **v0.3**: worker-сервис с очередью (Redis + BullMQ), пайплайн обработки (fetch → cleanup → sections → EN output → save .md в S3).
+- Фаза **v0.4**: мультиязычность — переводы в выбранные языки как отдельные job-ветки.
