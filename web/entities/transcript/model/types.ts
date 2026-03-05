@@ -19,6 +19,7 @@ export interface Transcript {
   duration_seconds: number | null;
   markdown_url: string | null;
   status: "pending" | "queued" | "processing" | "done" | "failed";
+  user_id: string | null;
   published_at: string | null;
   created_at: string;
   updated_at: string;

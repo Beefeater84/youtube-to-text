@@ -4,6 +4,8 @@ import {
   Libre_Baskerville,
   Special_Elite,
 } from "next/font/google";
+import { Header } from "@/shared/ui";
+import { Footer } from "@/shared/ui";
 import "./globals.css";
 
 const cormorant = Cormorant_Garamond({
@@ -57,7 +59,9 @@ export default function RootLayout({
       <body
         className={`${cormorant.variable} ${baskerville.variable} ${specialElite.variable}`}
       >
-        {children}
+        <Header />
+        <main>{children}</main>
+        <Footer />
       </body>
     </html>
   );

@@ -12,6 +12,7 @@ import {
   MarkdownContent,
   TableOfContents,
 } from "@/widgets/transcript-article";
+import { AuthCTA } from "@/widgets/auth-cta";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -165,9 +166,12 @@ export default async function TranscriptPage({ params }: PageProps) {
           />
         </VideoPlayerProvider>
 
+        <hr className="rule-thin my-8" />
+
+        <AuthCTA />
+
         <hr className="rule-thick mt-10" />
 
-        {/* Footer strip */}
         <div className="pt-2.5 text-center font-label text-[0.65rem] uppercase tracking-[0.15em] text-ink-faint">
           Transcript · {transcript.channels.title} ·{" "}
           {transcript.youtube_video_id}
