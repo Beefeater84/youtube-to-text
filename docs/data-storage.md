@@ -41,6 +41,14 @@ One row per registered user (auto-created on signup via database trigger). Key f
 
 RLS policies: users can read and update only their own profile.
 
+### `tags` table
+
+One row per tag. Key fields: `name`, `slug`. Public read access via RLS.
+
+### `channel_tags` table
+
+Junction table for many-to-many relationship between channels and tags. Composite PK: (`channel_id`, `tag_id`). Public read access via RLS.
+
 ## File Storage (S3-compatible)
 
 Transcript content is stored as Markdown files in an S3-compatible bucket.
