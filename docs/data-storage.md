@@ -18,6 +18,7 @@ One row per video transcript. Key fields:
 |-------|---------|
 | `youtube_video_id` | Unique YouTube video ID (e.g. `dQw4w9WgXcQ`) |
 | `channel_id` | FK to `channels` |
+| `user_id` | FK to `auth.users`, nullable (who created this job) |
 | `slug` | URL-safe identifier for the transcript page |
 | `language` | Language code of this transcript version |
 | `duration_seconds` | Video length in seconds |
@@ -25,7 +26,20 @@ One row per video transcript. Key fields:
 | `status` | Pipeline state: `pending → queued → processing → done / failed` |
 | `published_at` | When the transcript was made publicly available |
 
-RLS policy: public read access (no auth required to query).
+RLS policies: public read access; insert/update restricted to the owning authenticated user.
+
+### `profiles` table
+
+One row per registered user (auto-created on signup via database trigger). Key fields:
+
+| Field | Purpose |
+|-------|---------|
+| `id` | PK, FK to `auth.users` |
+| `display_name` | Name from Google account |
+| `avatar_url` | Avatar from Google account |
+| `preferred_languages` | Default languages for new transcript jobs (always includes `en`) |
+
+RLS policies: users can read and update only their own profile.
 
 ## File Storage (S3-compatible)
 
@@ -51,6 +65,12 @@ The `markdown_url` field in the database contains the path to the file. During v
 - CDN: S3/Supabase Storage has built-in CDN for global delivery.
 - Decoupling: the rendering pipeline only needs a URL, not a DB query for content.
 - Backup: files are independently versioned and backed up in object storage.
+
+## Authentication
+
+Authentication is handled by Supabase Auth with Google OAuth as the sole provider. Google credentials (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`) are stored in the root `.env` file (not in git) and referenced from `supabase/config.toml`.
+
+On first login, a database trigger automatically creates a `profiles` row from the Google account metadata.
 
 ## Relationship Between Video ID and Data
 

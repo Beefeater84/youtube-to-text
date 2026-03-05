@@ -107,5 +107,28 @@ flowchart LR
 - Components: Header, Footer, TranscriptCard, HorizontalRule, MarkdownContent.
 - `next.config.ts`: remotePatterns для YouTube-тамбнейлов.
 
+### Готово: v0.2 — Авторизация и создание задач (2026-03-05)
+- Auth: Google OAuth only через Supabase Auth (`[auth.external.google]` в `config.toml`).
+- Миграция `supabase/migrations/20260305120000_add_profiles_and_user_id.sql`:
+  - `profiles` (id → auth.users, display_name, avatar_url, preferred_languages).
+  - Trigger `on_auth_user_created` → auto-create profile из Google metadata.
+  - `transcripts.user_id` (nullable FK → auth.users).
+  - RLS: профиль read/update только свой; insert транскриптов только auth.
+- Новые FSD-слайсы в `web/`:
+  - `entities/profile/` — тип Profile + API `getCurrentProfile`.
+  - `features/auth/` — SignInButton, SignOutButton, UserMenu (Google OAuth flow).
+  - `features/create-transcript/` — форма (YouTube URL + мультиселект языков, EN всегда включён).
+  - `widgets/dashboard/` — DashboardJobList + StatusBadge (queued/processing/done/failed).
+  - `widgets/auth-cta/` — CTA-блок «Transcribe Your Own Videos» на страницах транскриптов.
+  - `shared/ui/` — Header (с auth state), HeaderAuth, Footer (вынесены в layout).
+- Новые маршруты:
+  - `/login` — страница входа с кнопкой «Sign in with Google».
+  - `/auth/callback` — OAuth callback handler (code → session → redirect to /dashboard).
+  - `/dashboard` — защищённая страница: форма + список задач карточками.
+- `middleware.ts` — защита `/dashboard` (redirect → `/login`), redirect auth-пользователей с `/login` → `/dashboard`.
+- `app/layout.tsx` — Header и Footer вынесены из страниц в корневой layout.
+- `app/transcripts/[slug]/page.tsx` — добавлен AuthCTA для неавторизованных пользователей.
+- Google OAuth ключи хранятся в `.env` корня проекта (не в git).
+
 ### Следующий шаг
-- Фаза **v0.2**: авторизация (Supabase Auth), форма добавления YouTube URL, создание задач со статусами.
+- Фаза **v0.3**: worker-сервис с очередью (Redis + BullMQ), пайплайн обработки (fetch → cleanup → sections → EN output → save .md в S3).
