@@ -25,38 +25,6 @@ const MOCK_CHANNELS = [
 export default function Home() {
   return (
     <section className="mx-auto max-w-[960px] px-4 pb-8 pt-4 md:px-6">
-      {/* Top info strip */}
-      <div className="flex flex-wrap items-center justify-center gap-1 py-1.5 font-label text-[0.7rem] uppercase tracking-[0.12em] text-ink-muted md:justify-between">
-        <span>VOL. I · No. 1</span>
-        <span>ESTABLISHED 2026</span>
-        <span className="hidden xs:inline">PRICE: FREE</span>
-      </div>
-
-      <hr className="rule-double" />
-
-      {/* Masthead */}
-      <header className="py-5 text-center">
-        <h1 className="font-masthead text-[clamp(2.4rem,8vw,5.5rem)] font-normal leading-none tracking-[0.02em]">
-          YouTube to Text
-        </h1>
-        <p className="mt-2 font-headline text-[clamp(0.75rem,2vw,1rem)] font-semibold uppercase tracking-[0.35em] text-ink-muted">
-          THE DAILY TRANSCRIPT
-        </p>
-      </header>
-
-      <hr className="rule-double" />
-
-      {/* Dateline */}
-      <div className="flex flex-col items-center gap-0.5 py-1.5 font-label text-[0.65rem] uppercase tracking-[0.1em] text-ink-light md:flex-row md:justify-between">
-        <span>MONDAY, MARCH 2, 2026</span>
-        <span className="font-headline text-[0.75rem] italic tracking-[0.05em]">
-          ALL THE TRANSCRIPTS FIT TO READ
-        </span>
-      </div>
-
-      <hr className="rule-thin" />
-
-      {/* Main content with sidebar */}
       <div className="grid gap-8 py-6 md:grid-cols-[minmax(0,2.1fr)_minmax(260px,1fr)]">
         {/* Latest news */}
         <section aria-label="Latest transcripts" className="space-y-4">
@@ -144,12 +112,6 @@ export default function Home() {
         </aside>
       </div>
 
-      <hr className="rule-thick" />
-
-      {/* Bottom strip */}
-      <div className="pt-2.5 text-center font-label text-[0.65rem] uppercase tracking-[0.15em] text-ink-faint">
-        FREE TO READ · OPEN TO ALL · NO ADS
-      </div>
     </section>
   );
 }
