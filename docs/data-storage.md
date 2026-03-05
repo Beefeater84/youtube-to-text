@@ -49,28 +49,36 @@ One row per tag. Key fields: `name`, `slug`. Public read access via RLS.
 
 Junction table for many-to-many relationship between channels and tags. Composite PK: (`channel_id`, `tag_id`). Public read access via RLS.
 
-## File Storage (S3-compatible)
+## File Storage (Supabase Storage)
 
-Transcript content is stored as Markdown files in an S3-compatible bucket.
+Transcript content is stored as Markdown files in a **public** Supabase Storage bucket named `transcripts`.
 
 ### Path Convention
 
 ```
-transcripts/{shard}/{videoId}/{lang}.md
+{shard}/{videoId}/{lang}.md
 ```
 
 - `shard` = first 2 characters of `videoId` (~4000 possible shards).
 - All translations for one video live in the same directory.
-- Example: `transcripts/Id/IdoVd4XHbDE/en.md`
+- Example: `Id/IdoVd4XHbDE/en.md`
+
+### Bucket Setup
+
+The worker creates the bucket automatically on first startup via the Supabase admin client:
+
+```typescript
+await supabase.storage.createBucket('transcripts', { public: true });
+```
 
 ### URL Resolution
 
-The `markdown_url` field in the database contains the path to the file. During v0.1 development, files are served from `web/public/sample-transcripts/` as static assets. In production (v0.3+), files will be served from Supabase Storage or an S3-compatible CDN.
+The `markdown_url` field in the database contains the **full public URL** to the file. During v0.1 development, files were served from `web/public/sample-transcripts/` as static assets. From v0.3+, files are served from Supabase Storage public URLs.
 
 ### Why Not Store Text in the Database
 
 - Storage cost: Postgres storage is more expensive than object storage.
-- CDN: S3/Supabase Storage has built-in CDN for global delivery.
+- CDN: Supabase Storage has built-in CDN for global delivery.
 - Decoupling: the rendering pipeline only needs a URL, not a DB query for content.
 - Backup: files are independently versioned and backed up in object storage.
 
@@ -79,6 +87,17 @@ The `markdown_url` field in the database contains the path to the file. During v
 Authentication is handled by Supabase Auth with Google OAuth as the sole provider. Google credentials (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`) are stored in the root `.env` file (not in git) and referenced from `supabase/config.toml`.
 
 On first login, a database trigger automatically creates a `profiles` row from the Google account metadata.
+
+## Worker Environment Variables
+
+The worker process requires the following environment variables (stored in `.env`, not in git):
+
+- `SUPABASE_URL` — Supabase project URL (same as `NEXT_PUBLIC_SUPABASE_URL`)
+- `SUPABASE_SERVICE_ROLE_KEY` — Service role key for bypassing RLS
+- `OPENAI_API_KEY` — OpenAI API key for transcript cleanup and structuring
+- `POLL_INTERVAL_MS` — (optional, default 5000) How often to poll for new jobs
+- `STALE_MINUTES` — (optional, default 15) Threshold for stale job recovery
+- `MAX_RETRIES` — (optional, default 3) Max retry attempts before marking job as failed
 
 ## Relationship Between Video ID and Data
 

@@ -6,8 +6,8 @@
 ## Технический стек (базовый)
 - **Frontend/Web:** `Next.js` (App Router) + `React 19` + `TypeScript` + `Tailwind CSS`.
 - **Auth/DB:** `Supabase` (Postgres + Auth).
-- **Файлы транскриптов:** Supabase Storage или S3-совместимое хранилище (AWS S3/Cloudflare R2), в БД хранить только URL и метаданные. Путь: `transcripts/{shard}/{videoId}/{lang}.md`.
-- **Долгие задачи:** отдельный `worker`-сервис (Node.js) + очередь (`Redis + BullMQ`), чтобы не упираться в таймауты веб-слоя.
+- **Файлы транскриптов:** Supabase Storage (публичный бакет), в БД хранить только URL и метаданные. Путь: `transcripts/{shard}/{videoId}/{lang}.md`.
+- **Долгие задачи:** отдельный `worker`-сервис (Node.js) + Postgres-as-queue (`FOR UPDATE SKIP LOCKED`), чтобы не упираться в таймауты веб-слоя.
 - **AI/LLM шаги:** cleanup/структурирование/перевод через отдельные воркеры с ретраями и идемпотентностью.
 - **Deploy:** self-host на VDS (Docker Compose: `next-app`, `worker`, `redis`, reverse proxy `Caddy/Nginx`).
 - **Мониторинг:** Sentry + базовые метрики очереди/ошибок.
@@ -135,5 +135,22 @@ flowchart LR
 - `app/transcripts/[slug]/page.tsx` — добавлен AuthCTA для неавторизованных пользователей.
 - Google OAuth ключи хранятся в `.env` корня проекта (не в git).
 
+### В работе: v0.3 — Worker и пайплайн обработки (2026-03-05)
+- Решения: Postgres-as-queue (без Redis), OpenAI GPT-4o-mini, Supabase Storage.
+- Миграция `supabase/migrations/20260305180000_worker_fields.sql`:
+  - `retry_count`, `error_message`, `started_at` в `transcripts`.
+  - `channel_id` стал nullable (баг-фикс v0.2).
+  - RPC: `grab_pending_transcript`, `increment_retry_and_fail`, `recover_stale_jobs`.
+- Server Action `web/features/create-transcript/api/submit-job.ts`:
+  - YouTube oEmbed для метаданных, find/create channel, insert transcript (status=pending).
+  - Форма обновлена: Server Action вместо прямого client-side insert.
+- Worker сервис `worker/`:
+  - Polling loop с graceful shutdown (SIGINT/SIGTERM).
+  - Pipeline: fetch-transcript → process-with-llm → generate-markdown → upload-to-storage.
+  - Конфиг: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, OPENAI_API_KEY.
+- Docker: убран Redis, worker использует Postgres-as-queue.
+  - `deploy/docker-compose.prod.yml`: удалён redis сервис, обновлён worker.
+  - `deploy/docker/worker.Dockerfile`: обновлён для `worker/` директории.
+
 ### Следующий шаг
-- Фаза **v0.3**: worker-сервис с очередью (Redis + BullMQ), пайплайн обработки (fetch → cleanup → sections → EN output → save .md в S3).
+- Фаза **v0.4**: мультиязычность — переводы в выбранные языки как отдельные job-ветки.
