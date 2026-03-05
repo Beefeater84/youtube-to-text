@@ -152,5 +152,9 @@ flowchart LR
   - `deploy/docker-compose.prod.yml`: удалён redis сервис, обновлён worker.
   - `deploy/docker/worker.Dockerfile`: обновлён для `worker/` директории.
 
-### Следующий шаг
+### Следующие шаги
 - Фаза **v0.4**: мультиязычность — переводы в выбранные языки как отдельные job-ветки.
+
+### Бэклог: Observability (после v0.3)
+1. **Sentry для worker** — подключить `@sentry/node` в `worker/src/index.ts`. Инфраструктура готова (`SENTRY_DSN_WORKER` уже передаётся в docker-compose), осталось инициализировать SDK и обернуть pipeline в error capture. Даст push/email-уведомления о любых ошибках worker-а.
+2. **Healthcheck heartbeat** — worker периодически пингует внешний сервис (Healthchecks.io, бесплатный план). Если пинг пропал — алерт. Ловит и краши, и зависания (когда процесс жив, но не работает).
