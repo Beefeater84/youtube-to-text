@@ -3,3 +3,4 @@ src/node_modules/
 web/node_modules/
 web/.next/
 compass-ts/
+.env
