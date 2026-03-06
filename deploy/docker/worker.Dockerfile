@@ -1,23 +1,15 @@
-FROM node:20-alpine AS deps
+FROM python:3.12-slim
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl unzip \
+    && curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh \
+    && apt-get purge -y curl unzip && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
-COPY worker/package*.json ./
-RUN npm ci
+COPY worker/pyproject.toml .
+RUN pip install --no-cache-dir .
 
-FROM node:20-alpine AS builder
-WORKDIR /app
+COPY worker/src ./src
 
-COPY --from=deps /app/node_modules ./node_modules
-COPY worker/ .
-
-RUN npm run build
-
-FROM node:20-alpine AS runner
-WORKDIR /app
-ENV NODE_ENV=production
-
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-
-CMD ["node", "dist/index.js"]
+CMD ["python", "-m", "src.main"]

@@ -4,3 +4,13 @@ web/node_modules/
 web/.next/
 compass-ts/
 .env
+
+# Python worker
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+worker/*.egg-info/

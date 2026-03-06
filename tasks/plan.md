@@ -135,22 +135,26 @@ flowchart LR
 - `app/transcripts/[slug]/page.tsx` — добавлен AuthCTA для неавторизованных пользователей.
 - Google OAuth ключи хранятся в `.env` корня проекта (не в git).
 
-### В работе: v0.3 — Worker и пайплайн обработки (2026-03-05)
+### Готово: v0.3 — Worker и пайплайн обработки (2026-03-06)
 - Решения: Postgres-as-queue (без Redis), OpenAI GPT-4o-mini, Supabase Storage.
 - Миграция `supabase/migrations/20260305180000_worker_fields.sql`:
   - `retry_count`, `error_message`, `started_at` в `transcripts`.
   - `channel_id` стал nullable (баг-фикс v0.2).
   - RPC: `grab_pending_transcript`, `increment_retry_and_fail`, `recover_stale_jobs`.
 - Server Action `web/features/create-transcript/api/submit-job.ts`:
-  - YouTube oEmbed для метаданных, find/create channel, insert transcript (status=pending).
-  - Форма обновлена: Server Action вместо прямого client-side insert.
-- Worker сервис `worker/`:
+  - Упрощён: убраны oEmbed, findOrCreateChannel, slugify — вставляется минимальная запись (videoId, userId, status=pending).
+  - Вся работа с YouTube-метаданными перенесена в worker.
+- Worker сервис `worker/` — **переписан на Python + yt-dlp**:
+  - Заменена ненадёжная библиотека `youtube-transcript` (Node.js) на `yt-dlp` (Python, 150k+ stars).
+  - Структура: `pyproject.toml`, `src/` (config, db, models, main, pipeline/).
+  - Pipeline: fetch_transcript (yt-dlp) → enrich (title/channel/thumbnail в БД) → process_with_llm → generate_markdown → upload_to_storage.
+  - Новый шаг `enrich`: worker обновляет title, slug, thumbnail, duration и создаёт/находит channel из метаданных yt-dlp.
+  - Зависимости: yt-dlp, supabase-py, openai, python-dotenv.
   - Polling loop с graceful shutdown (SIGINT/SIGTERM).
-  - Pipeline: fetch-transcript → process-with-llm → generate-markdown → upload-to-storage.
-  - Конфиг: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, OPENAI_API_KEY.
-- Docker: убран Redis, worker использует Postgres-as-queue.
-  - `deploy/docker-compose.prod.yml`: удалён redis сервис, обновлён worker.
-  - `deploy/docker/worker.Dockerfile`: обновлён для `worker/` директории.
+- Docker: убран Redis и Node.js, worker на Python.
+  - `deploy/docker/worker.Dockerfile`: `python:3.12-slim` + deno (для yt-dlp JS плагинов).
+  - `deploy/docker-compose.prod.yml`: убран `NODE_ENV`, команда `python -m src.main`.
+- Dashboard: показывает "Processing..." пока worker не обновил title.
 
 ### Следующие шаги
 - Фаза **v0.4**: мультиязычность — переводы в выбранные языки как отдельные job-ветки.
@@ -160,4 +164,4 @@ flowchart LR
 2. **Healthcheck heartbeat** — worker периодически пингует внешний сервис (Healthchecks.io, бесплатный план). Если пинг пропал — алерт. Ловит и краши, и зависания (когда процесс жив, но не работает).
 
 ### Бэклог: Worker pipeline (после v0.3)
-1. **Замена библиотеки получения субтитров** — текущая `youtube-transcript` (v1.2.1) ненадёжна: не находит субтитры у видео, где они есть. Исследовать и выбрать более надёжную альтернативу (например, `youtubei.js`, прямой парсинг YouTube innertube API, или серверный yt-dlp).
+1. ~~**Замена библиотеки получения субтитров**~~ — решено: worker переписан на Python + yt-dlp (feat/python-worker-yt-dlp).
