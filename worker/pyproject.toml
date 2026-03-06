@@ -1,0 +1,14 @@
+[project]
+name = "youtube-to-text-worker"
+version = "0.3.0"
+description = "Transcript processing worker using yt-dlp and OpenAI"
+requires-python = ">=3.12"
+dependencies = [
+    "yt-dlp",
+    "supabase",
+    "openai",
+    "python-dotenv",
+]
+
+[project.scripts]
+worker = "src.main:main"

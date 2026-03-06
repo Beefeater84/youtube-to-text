@@ -2,86 +2,15 @@
 
 import { createClient } from "@/libs/supabase/server";
 
-interface OEmbedResponse {
-  title: string;
-  author_name: string;
-  thumbnail_url: string;
-}
-
 interface SubmitResult {
   success: boolean;
   error?: string;
 }
 
 /**
- * Fetches video metadata from YouTube oEmbed API.
- * Used by submitTranscriptJob to populate title, channel name, and thumbnail
- * before inserting the transcript record.
- */
-async function fetchVideoMetadata(
-  videoId: string,
-): Promise<OEmbedResponse | null> {
-  const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
-    if (!res.ok) return null;
-    return (await res.json()) as OEmbedResponse;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Generates a URL-safe slug from a title string.
- * Used to create readable transcript page URLs like /transcripts/my-video-title.
- */
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/[\s_]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80);
-}
-
-/**
- * Finds an existing channel by youtube author name or creates a new one.
- * Used during transcript job submission to link the transcript to its channel.
- */
-async function findOrCreateChannel(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  authorName: string,
-  thumbnailUrl: string | null,
-) {
-  const slug = slugify(authorName);
-
-  const { data: existing } = await supabase
-    .from("channels")
-    .select("id")
-    .eq("slug", slug)
-    .single();
-
-  if (existing) return existing.id as string;
-
-  const { data: created, error } = await supabase
-    .from("channels")
-    .insert({
-      youtube_id: slug,
-      title: authorName,
-      slug,
-      thumbnail_url: thumbnailUrl,
-    })
-    .select("id")
-    .single();
-
-  if (error) throw new Error(`Failed to create channel: ${error.message}`);
-  return created.id as string;
-}
-
-/**
- * Server Action: validates the user, fetches YouTube metadata via oEmbed,
- * finds or creates the channel, and inserts a transcript record with status "pending".
+ * Server Action: validates the user, checks for duplicates, and inserts a
+ * minimal transcript record with status "pending". The worker handles all
+ * YouTube metadata extraction (title, channel, thumbnail) via yt-dlp.
  * Called from CreateTranscriptForm on the /dashboard page.
  */
 export async function submitTranscriptJob(
@@ -111,31 +40,13 @@ export async function submitTranscriptJob(
       };
     }
 
-    const metadata = await fetchVideoMetadata(videoId);
-    if (!metadata) {
-      return {
-        success: false,
-        error: "Could not fetch video info. Check the URL and try again.",
-      };
-    }
-
-    const channelId = await findOrCreateChannel(
-      supabase,
-      metadata.author_name,
-      null,
-    );
-
-    const slug = `${slugify(metadata.title)}-${videoId}`;
-
     const { error } = await supabase.from("transcripts").insert({
       youtube_video_id: videoId,
-      title: metadata.title,
-      thumbnail_url: metadata.thumbnail_url,
-      slug,
+      title: videoId,
+      slug: videoId,
       status: "pending",
       language: "en",
       user_id: user.id,
-      channel_id: channelId,
     });
 
     if (error) {

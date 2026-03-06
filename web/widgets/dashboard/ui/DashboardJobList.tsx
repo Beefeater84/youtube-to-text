@@ -45,7 +45,9 @@ export function DashboardJobList({ transcripts }: DashboardJobListProps) {
             </div>
 
             <h3 className="font-headline text-[0.95rem] font-semibold leading-snug">
-              {transcript.title}
+              {transcript.title === transcript.youtube_video_id
+                ? "Processing..."
+                : transcript.title}
             </h3>
 
             <p className="mt-1 font-label text-[0.65rem] uppercase tracking-[0.08em] text-ink-ghost">
