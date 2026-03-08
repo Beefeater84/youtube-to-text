@@ -63,6 +63,7 @@ class FetchResult:
 
     metadata: VideoMetadata
     segments: list[RawSegment]
+    source_language: str
 
 
 @dataclass

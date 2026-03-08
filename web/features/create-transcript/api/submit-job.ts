@@ -31,6 +31,7 @@ export async function submitTranscriptJob(
       .from("transcripts")
       .select("id")
       .eq("youtube_video_id", videoId)
+      .eq("language", "en")
       .single();
 
     if (existingTranscript) {

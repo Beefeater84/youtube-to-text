@@ -14,28 +14,17 @@ logger = logging.getLogger(__name__)
 _TMP_DIR = os.path.join(tempfile.gettempdir(), "yt-dlp")
 
 
-def fetch_transcript(video_id: str) -> FetchResult:
+def fetch_transcript(video_id: str, target_lang: str = "en") -> FetchResult:
     """
-    Extract video metadata and caption segments using the yt-dlp Python API.
+    Extract video metadata and caption segments using yt-dlp with language fallback.
+    Tries target_lang first; falls back to the video's original language if unavailable.
     Called as the first step of the processing pipeline.
     """
     url = f"https://www.youtube.com/watch?v={video_id}"
-
     os.makedirs(_TMP_DIR, exist_ok=True)
 
-    ydl_opts: dict = {
-        "writesubtitles": True,
-        "writeautomaticsub": True,
-        "subtitleslangs": ["en"],
-        "subtitlesformat": "json3/vtt/srt/best",
-        "skip_download": True,
-        "quiet": True,
-        "no_warnings": True,
-        "outtmpl": os.path.join(_TMP_DIR, "%(id)s"),
-    }
-
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=True)
+    with yt_dlp.YoutubeDL({"quiet": True, "no_warnings": True}) as ydl:
+        info = ydl.extract_info(url, download=False)
 
     if info is None:
         raise RuntimeError(f"yt-dlp returned no info for {video_id}")
@@ -49,20 +38,61 @@ def fetch_transcript(video_id: str) -> FetchResult:
         description=info.get("description", ""),
     )
 
-    segments = _parse_subtitles(video_id)
+    chosen_lang = _pick_best_language(info, target_lang)
+    logger.info("subtitle language: requested=%s, chosen=%s", target_lang, chosen_lang)
+
+    ydl_opts: dict = {
+        "writesubtitles": True,
+        "writeautomaticsub": True,
+        "subtitleslangs": [chosen_lang],
+        "subtitlesformat": "json3/vtt/srt/best",
+        "skip_download": True,
+        "quiet": True,
+        "no_warnings": True,
+        "outtmpl": os.path.join(_TMP_DIR, "%(id)s"),
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
+
+    segments = _parse_subtitles(video_id, chosen_lang)
 
     if not segments:
-        raise RuntimeError(f"No captions found for video {video_id}")
+        raise RuntimeError(f"No captions found for video {video_id} (tried {chosen_lang})")
 
-    return FetchResult(metadata=metadata, segments=segments)
+    return FetchResult(metadata=metadata, segments=segments, source_language=chosen_lang)
 
 
-def _parse_subtitles(video_id: str) -> list[RawSegment]:
+def _pick_best_language(info: dict, target: str) -> str:
+    """
+    Choose the best available subtitle language from yt-dlp info dict.
+    Prefers target language; falls back to any manual sub, then original auto-caption.
+    """
+    subs = info.get("subtitles") or {}
+    auto = info.get("automatic_captions") or {}
+
+    if target in subs or target in auto:
+        return target
+
+    if subs:
+        return next(iter(subs))
+
+    original = info.get("language")
+    if original and original in auto:
+        return original
+
+    if auto:
+        return next(iter(auto))
+
+    raise RuntimeError(f"No subtitles available for video {info.get('id')}")
+
+
+def _parse_subtitles(video_id: str, lang: str) -> list[RawSegment]:
     """Read and parse the json3 subtitle file written by yt-dlp."""
-    json3_path = os.path.join(_TMP_DIR, f"{video_id}.en.json3")
+    json3_path = os.path.join(_TMP_DIR, f"{video_id}.{lang}.json3")
 
     if not os.path.exists(json3_path):
-        vtt_path = os.path.join(_TMP_DIR, f"{video_id}.en.vtt")
+        vtt_path = os.path.join(_TMP_DIR, f"{video_id}.{lang}.vtt")
         if os.path.exists(vtt_path):
             return _parse_vtt(vtt_path)
         return []
@@ -87,7 +117,7 @@ def _parse_subtitles(video_id: str) -> list[RawSegment]:
             duration=event.get("dDurationMs", 0) / 1000,
         ))
 
-    _cleanup_tmp(video_id)
+    _cleanup_tmp(video_id, lang)
     return segments
 
 
@@ -131,9 +161,9 @@ def _parse_vtt(path: str) -> list[RawSegment]:
     return segments
 
 
-def _cleanup_tmp(video_id: str) -> None:
+def _cleanup_tmp(video_id: str, lang: str) -> None:
     """Remove temporary subtitle files after parsing."""
-    for ext in (".en.json3", ".en.vtt", ".en.srt"):
+    for ext in (f".{lang}.json3", f".{lang}.vtt", f".{lang}.srt"):
         path = os.path.join(_TMP_DIR, f"{video_id}{ext}")
         if os.path.exists(path):
             os.remove(path)

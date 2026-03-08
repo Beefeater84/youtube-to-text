@@ -127,6 +127,46 @@ def find_or_create_channel(channel_name: str, youtube_channel_id: str) -> str:
     return result.data[0]["id"]
 
 
+def create_sibling_transcript(
+    original_job: TranscriptJob,
+    *,
+    language: str,
+    slug: str,
+    markdown_url: str,
+    duration_seconds: int,
+    title: str,
+    thumbnail_url: str | None,
+    channel_id: str | None,
+) -> None:
+    """
+    Create an additional transcript row for the same video in a different language.
+    Used when the worker produces both the original-language and English versions.
+    Skips silently if the (video, language) pair already exists.
+    """
+    sb = get_supabase()
+    try:
+        sb.table("transcripts").insert({
+            "youtube_video_id": original_job.youtube_video_id,
+            "language": language,
+            "title": title,
+            "slug": slug,
+            "description": original_job.description,
+            "thumbnail_url": thumbnail_url,
+            "duration_seconds": duration_seconds,
+            "channel_id": channel_id,
+            "user_id": original_job.user_id,
+            "markdown_url": markdown_url,
+            "status": "done",
+            "published_at": datetime.now(timezone.utc).isoformat(),
+        }).execute()
+    except Exception as e:
+        if "duplicate" in str(e).lower() or "unique" in str(e).lower():
+            logger.info("sibling transcript already exists for %s/%s, skipping",
+                        original_job.youtube_video_id, language)
+        else:
+            raise
+
+
 def _slugify(text: str) -> str:
     """Convert text to a URL-safe slug."""
     import re
