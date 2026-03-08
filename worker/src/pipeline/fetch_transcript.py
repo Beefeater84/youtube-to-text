@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import tempfile
+import urllib.request
 
 import yt_dlp
 
@@ -16,15 +17,27 @@ _TMP_DIR = os.path.join(tempfile.gettempdir(), "yt-dlp")
 
 def fetch_transcript(video_id: str, target_lang: str = "en") -> FetchResult:
     """
-    Extract video metadata and caption segments using yt-dlp with language fallback.
-    Tries target_lang first; falls back to the video's original language if unavailable.
+    Extract video metadata and caption segments using a single yt-dlp call.
+    If target_lang subtitles aren't available, falls back to the original
+    language by downloading directly from the URL in the info dict.
     Called as the first step of the processing pipeline.
     """
     url = f"https://www.youtube.com/watch?v={video_id}"
     os.makedirs(_TMP_DIR, exist_ok=True)
 
-    with yt_dlp.YoutubeDL({"quiet": True, "no_warnings": True}) as ydl:
-        info = ydl.extract_info(url, download=False)
+    ydl_opts: dict = {
+        "writesubtitles": True,
+        "writeautomaticsub": True,
+        "subtitleslangs": [target_lang],
+        "subtitlesformat": "json3/vtt/srt/best",
+        "skip_download": True,
+        "quiet": True,
+        "no_warnings": True,
+        "outtmpl": os.path.join(_TMP_DIR, "%(id)s"),
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=True)
 
     if info is None:
         raise RuntimeError(f"yt-dlp returned no info for {video_id}")
@@ -38,53 +51,80 @@ def fetch_transcript(video_id: str, target_lang: str = "en") -> FetchResult:
         description=info.get("description", ""),
     )
 
-    chosen_lang = _pick_best_language(info, target_lang)
-    logger.info("subtitle language: requested=%s, chosen=%s", target_lang, chosen_lang)
+    segments = _parse_subtitles(video_id, target_lang)
+    if segments:
+        logger.info("subtitle language: %s (requested)", target_lang)
+        return FetchResult(metadata=metadata, segments=segments, source_language=target_lang)
 
-    ydl_opts: dict = {
-        "writesubtitles": True,
-        "writeautomaticsub": True,
-        "subtitleslangs": [chosen_lang],
-        "subtitlesformat": "json3/vtt/srt/best",
-        "skip_download": True,
-        "quiet": True,
-        "no_warnings": True,
-        "outtmpl": os.path.join(_TMP_DIR, "%(id)s"),
-    }
+    fallback_lang = _pick_fallback_language(info, target_lang)
+    if fallback_lang is None:
+        raise RuntimeError(f"No subtitles available for video {video_id}")
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([url])
+    logger.info("no %s subtitles, falling back to %s", target_lang, fallback_lang)
+    _download_subtitle_from_info(info, video_id, fallback_lang)
 
-    segments = _parse_subtitles(video_id, chosen_lang)
-
+    segments = _parse_subtitles(video_id, fallback_lang)
     if not segments:
-        raise RuntimeError(f"No captions found for video {video_id} (tried {chosen_lang})")
+        raise RuntimeError(
+            f"No captions found for {video_id} (tried {target_lang}, {fallback_lang})"
+        )
 
-    return FetchResult(metadata=metadata, segments=segments, source_language=chosen_lang)
+    return FetchResult(metadata=metadata, segments=segments, source_language=fallback_lang)
 
 
-def _pick_best_language(info: dict, target: str) -> str:
+def _pick_fallback_language(info: dict, exclude: str) -> str | None:
     """
-    Choose the best available subtitle language from yt-dlp info dict.
-    Prefers target language; falls back to any manual sub, then original auto-caption.
+    Choose the best fallback subtitle language from yt-dlp info dict,
+    skipping the language that already failed. Prefers manual subs over auto.
     """
     subs = info.get("subtitles") or {}
     auto = info.get("automatic_captions") or {}
 
-    if target in subs or target in auto:
-        return target
-
-    if subs:
-        return next(iter(subs))
+    for lang in subs:
+        if lang != exclude and not lang.startswith("live_chat"):
+            return lang
 
     original = info.get("language")
-    if original and original in auto:
+    if original and original != exclude and original in auto:
         return original
 
-    if auto:
-        return next(iter(auto))
+    for lang in auto:
+        if lang != exclude and not lang.startswith("live_chat"):
+            return lang
 
-    raise RuntimeError(f"No subtitles available for video {info.get('id')}")
+    return None
+
+
+def _download_subtitle_from_info(info: dict, video_id: str, lang: str) -> None:
+    """
+    Download a subtitle file directly from the URL found in the yt-dlp info dict.
+    Avoids a second yt-dlp session and the associated rate-limit risk.
+    """
+    subs = info.get("subtitles") or {}
+    auto = info.get("automatic_captions") or {}
+    formats = subs.get(lang) or auto.get(lang) or []
+
+    preferred_ext = ("json3", "vtt", "srt")
+    chosen = None
+    for ext in preferred_ext:
+        for fmt in formats:
+            if fmt.get("ext") == ext:
+                chosen = fmt
+                break
+        if chosen:
+            break
+
+    if not chosen and formats:
+        chosen = formats[0]
+
+    if not chosen:
+        raise RuntimeError(f"No downloadable subtitle format for {lang}")
+
+    ext = chosen.get("ext", "vtt")
+    out_path = os.path.join(_TMP_DIR, f"{video_id}.{lang}.{ext}")
+
+    logger.info("downloading %s subtitles (%s) directly", lang, ext)
+    urllib.request.urlretrieve(chosen["url"], out_path)
 
 
 def _parse_subtitles(video_id: str, lang: str) -> list[RawSegment]:

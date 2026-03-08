@@ -122,7 +122,7 @@ def find_or_create_channel(channel_name: str, youtube_channel_id: str) -> str:
         "title": channel_name,
         "slug": slug,
         "thumbnail_url": None,
-    }).select("id").execute()
+    }).execute()
 
     return result.data[0]["id"]
 
