@@ -67,6 +67,7 @@ export function CreateTranscriptForm({
     }
 
     setUrl("");
+    setLanguages(["en"]);
     setStatus("success");
     setTimeout(() => setStatus("idle"), 3000);
   };

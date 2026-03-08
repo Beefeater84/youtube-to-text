@@ -1,10 +1,13 @@
 # Dashboard page
+
 ## Access rights
+
 - Only authenticated users can view this page.
 
 ### Features and blocks
 
 ### Form for creating a new job
+
 - It accepts a YouTube URL as input
 - List of available languages for translating YouTube videos
 - The client selects any language from the available options and submits the form.
