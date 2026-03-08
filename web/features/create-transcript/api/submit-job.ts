@@ -7,10 +7,11 @@ interface SubmitResult {
   error?: string;
 }
 
+const ACTIVE_STATUSES = ["done", "processing", "queued"];
+
 /**
- * Server Action: validates the user, checks for duplicates, and inserts
- * one transcript record per requested language with status "pending".
- * The worker handles YouTube metadata extraction (title, channel, thumbnail).
+ * Server Action: validates the user, checks for duplicates, re-queues
+ * stale records, and inserts new transcript records per requested language.
  * Called from CreateTranscriptForm on the /dashboard page.
  */
 export async function submitTranscriptJob(
@@ -29,35 +30,45 @@ export async function submitTranscriptJob(
 
     const { data: existing } = await supabase
       .from("transcripts")
-      .select("language")
+      .select("id, language, status")
       .eq("youtube_video_id", videoId)
       .in("language", languages);
 
+    const existingRecords = existing ?? [];
     const existingLangs = new Set(
-      (existing ?? []).map((row) => row.language as string),
+      existingRecords.map((row) => row.language as string),
     );
-    const newLangs = languages.filter((lang) => !existingLangs.has(lang));
 
-    if (newLangs.length === 0) {
-      return {
-        success: false,
-        error: "This video has already been submitted for the selected languages.",
-      };
+    const staleRecords = existingRecords.filter(
+      (row) => !ACTIVE_STATUSES.includes(row.status as string),
+    );
+
+    if (staleRecords.length > 0) {
+      const staleIds = staleRecords.map((row) => row.id as string);
+      await supabase
+        .from("transcripts")
+        .update({ status: "pending" })
+        .eq("youtube_video_id", videoId)
+        .in("id", staleIds);
     }
 
-    const rows = newLangs.map((lang) => ({
-      youtube_video_id: videoId,
-      title: videoId,
-      slug: lang === "en" ? videoId : `${videoId}-${lang}`,
-      status: "pending" as const,
-      language: lang,
-      user_id: user.id,
-    }));
+    const newLangs = languages.filter((lang) => !existingLangs.has(lang));
 
-    const { error } = await supabase.from("transcripts").insert(rows);
+    if (newLangs.length > 0) {
+      const rows = newLangs.map((lang) => ({
+        youtube_video_id: videoId,
+        title: videoId,
+        slug: lang === "en" ? videoId : `${videoId}-${lang}`,
+        status: "pending" as const,
+        language: lang,
+        user_id: user.id,
+      }));
 
-    if (error) {
-      return { success: false, error: error.message };
+      const { error } = await supabase.from("transcripts").insert(rows);
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
     }
 
     return { success: true };
