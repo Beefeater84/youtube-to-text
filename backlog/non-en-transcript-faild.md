@@ -1,12 +1,5 @@
 Создай описание бага в этой задаче:
 Текущий баг: 
-Если мы выбриаем видео с неанглийским языком, то оно падает с ошибкой:
-```
-[worker] 09:50:00 INFO step 1/5: fetching transcript for hN9R-KUNmr8
-ERROR: Unable to download video subtitles for 'en': HTTP Error 429: Too Many Requests
-[worker] 09:50:05 ERROR job 859a4c37-ca07-43ed-922e-9b4ccfd38b92 failed: ERROR: Unable to download video subtitles for 'en': HTTP Error 429: Too Many Requests      
-[worker] 09:50:05 INFO HTTP Request: POST http://127.0.0.1:54321/rest/v1/rpc/increment_retry_and_fail "HTTP/1.1 204 No Content"
-```
 
 Видео для проверки:
 https://youtu.be/hN9R-KUNmr8?si=Jo9TntZXi78WeNl6 
@@ -32,3 +25,22 @@ https://youtu.be/hN9R-KUNmr8?si=Jo9TntZXi78WeNl6
 - Сохраняем в md
 - Публикуем на сайте в этом языке
 - Публикуем на сайте в английском языке
+
+
+Текущее поведение:
+Проверочное видео:
+- https://youtu.be/hN9R-KUNmr8?si=Jo9TntZXi78WeNl6  - видео содержит только русские субтитры
+
+Use case:
+- На странице /dashboard выбираем English, Russian
+- В базе данных появляется только одна запись с языком en
+
+Проверочное видео 2:
+https://youtu.be/NSqjMXCNXv4?si=dwIybMi8J26DXglL 
+Содержит только английские субтитры
+
+Use case:
+- На странице /dashboard выбираем English, Russian
+- В базе данных появляется только одна запись с языком en
+
+

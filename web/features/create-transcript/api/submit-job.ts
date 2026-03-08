@@ -8,9 +8,9 @@ interface SubmitResult {
 }
 
 /**
- * Server Action: validates the user, checks for duplicates, and inserts a
- * minimal transcript record with status "pending". The worker handles all
- * YouTube metadata extraction (title, channel, thumbnail) via yt-dlp.
+ * Server Action: validates the user, checks for duplicates, and inserts
+ * one transcript record per requested language with status "pending".
+ * The worker handles YouTube metadata extraction (title, channel, thumbnail).
  * Called from CreateTranscriptForm on the /dashboard page.
  */
 export async function submitTranscriptJob(
@@ -27,28 +27,34 @@ export async function submitTranscriptJob(
       return { success: false, error: "You must be signed in." };
     }
 
-    const { data: existingTranscript } = await supabase
+    const { data: existing } = await supabase
       .from("transcripts")
-      .select("id")
+      .select("language")
       .eq("youtube_video_id", videoId)
-      .eq("language", "en")
-      .single();
+      .in("language", languages);
 
-    if (existingTranscript) {
+    const existingLangs = new Set(
+      (existing ?? []).map((row) => row.language as string),
+    );
+    const newLangs = languages.filter((lang) => !existingLangs.has(lang));
+
+    if (newLangs.length === 0) {
       return {
         success: false,
-        error: "This video has already been submitted.",
+        error: "This video has already been submitted for the selected languages.",
       };
     }
 
-    const { error } = await supabase.from("transcripts").insert({
+    const rows = newLangs.map((lang) => ({
       youtube_video_id: videoId,
       title: videoId,
-      slug: videoId,
-      status: "pending",
-      language: "en",
+      slug: lang === "en" ? videoId : `${videoId}-${lang}`,
+      status: "pending" as const,
+      language: lang,
       user_id: user.id,
-    });
+    }));
+
+    const { error } = await supabase.from("transcripts").insert(rows);
 
     if (error) {
       return { success: false, error: error.message };
