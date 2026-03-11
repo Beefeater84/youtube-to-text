@@ -1,6 +1,6 @@
 [project]
 name = "youtube-to-text-worker"
-version = "0.3.0"
+version = "0.4.0"
 description = "Transcript processing worker using yt-dlp and OpenAI"
 requires-python = ">=3.12"
 dependencies = [
@@ -9,6 +9,15 @@ dependencies = [
     "openai",
     "python-dotenv",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-mock",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [project.scripts]
 worker = "src.main:main"

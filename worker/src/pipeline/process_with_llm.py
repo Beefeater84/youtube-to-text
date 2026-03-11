@@ -1,41 +1,22 @@
 from __future__ import annotations
 
-import json
 import logging
 
-from openai import OpenAI
+# --- OpenAI DISABLED for v0.4 development (saving API limits) ---
+# import json
+# from openai import OpenAI
+# from src import config
+# --- END DISABLED ---
 
-from src import config
 from src.models import ProcessedSection, RawSegment
 
 logger = logging.getLogger(__name__)
 
-_SYSTEM_PROMPT = """You are a transcript editor. You receive raw YouTube caption segments with timestamps.
+# --- OpenAI DISABLED for v0.4 development ---
+# _SYSTEM_PROMPT = """You are a transcript editor. ..."""
+# --- END DISABLED ---
 
-Your task:
-1. Clean up the text: fix grammar, remove filler words ("um", "uh", "like", "you know"), merge broken sentences.
-2. Group the segments into 4-12 logical sections based on topic shifts.
-3. For each section, write a clean, descriptive heading (no timestamps or brackets in the heading).
-4. The timestamp for each section is the offset (in seconds) of the first segment in that section.
-5. Preserve the original meaning — do not add, invent, or editorialize content.
-6. Keep the output in {language_name} — do NOT translate to another language.
-
-Return a JSON object with this exact structure:
-{{
-  "sections": [
-    {{
-      "title": "Section Heading",
-      "timestamp": 0,
-      "content": "Cleaned paragraph text for this section..."
-    }}
-  ]
-}}
-
-Rules:
-- Sections must be in chronological order (timestamps ascending).
-- Each section should have at least 2-3 sentences of content.
-- Do not include timestamps in headings or content text.
-- Output ONLY the JSON object, no markdown fences or extra text."""
+_SEGMENTS_PER_SECTION = 20
 
 
 def process_with_llm(
@@ -43,48 +24,60 @@ def process_with_llm(
     source_language: str = "en",
 ) -> list[ProcessedSection]:
     """
-    Send raw transcript segments to OpenAI for cleanup and structuring.
+    Clean up and structure raw transcript segments into logical sections.
     Output is always in the source language (no translation happens here).
     Called after fetch_transcript to clean up raw caption text.
+
+    NOTE: OpenAI is temporarily disabled. Segments are grouped mechanically.
     """
-    client = OpenAI(api_key=config.OPENAI_API_KEY)
+    # --- OpenAI DISABLED for v0.4 development ---
+    # client = OpenAI(api_key=config.OPENAI_API_KEY)
+    # language_name = _lang_code_to_name(source_language)
+    # system_prompt = _SYSTEM_PROMPT.format(language_name=language_name)
+    # segment_text = "\n".join(f"[{round(s.offset)}s] {s.text}" for s in segments)
+    # response = client.chat.completions.create(
+    #     model="gpt-4o-mini",
+    #     response_format={"type": "json_object"},
+    #     messages=[
+    #         {"role": "system", "content": system_prompt},
+    #         {"role": "user", "content": segment_text},
+    #     ],
+    #     temperature=0.3,
+    #     max_tokens=16000,
+    # )
+    # content = response.choices[0].message.content
+    # if not content:
+    #     raise RuntimeError("Empty response from OpenAI")
+    # parsed = json.loads(content)
+    # sections = parsed.get("sections", [])
+    # if not isinstance(sections, list) or len(sections) == 0:
+    #     raise RuntimeError("LLM returned no sections")
+    # return [
+    #     ProcessedSection(
+    #         title=s["title"],
+    #         timestamp=int(s["timestamp"]),
+    #         content=s["content"],
+    #     )
+    #     for s in sections
+    # ]
+    # --- END DISABLED ---
 
-    language_name = _lang_code_to_name(source_language)
-    system_prompt = _SYSTEM_PROMPT.format(language_name=language_name)
+    if not segments:
+        raise RuntimeError("No segments to process")
 
-    segment_text = "\n".join(
-        f"[{round(s.offset)}s] {s.text}" for s in segments
-    )
-
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        response_format={"type": "json_object"},
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": segment_text},
-        ],
-        temperature=0.3,
-        max_tokens=16000,
-    )
-
-    content = response.choices[0].message.content
-    if not content:
-        raise RuntimeError("Empty response from OpenAI")
-
-    parsed = json.loads(content)
-    sections = parsed.get("sections", [])
-
-    if not isinstance(sections, list) or len(sections) == 0:
-        raise RuntimeError("LLM returned no sections")
-
-    return [
-        ProcessedSection(
-            title=s["title"],
-            timestamp=int(s["timestamp"]),
-            content=s["content"],
+    sections: list[ProcessedSection] = []
+    for i in range(0, len(segments), _SEGMENTS_PER_SECTION):
+        chunk = segments[i : i + _SEGMENTS_PER_SECTION]
+        sections.append(
+            ProcessedSection(
+                title=chunk[0].text[:80],
+                timestamp=int(chunk[0].offset),
+                content=" ".join(s.text for s in chunk),
+            )
         )
-        for s in sections
-    ]
+
+    logger.info("pass-through: grouped %d segments into %d sections", len(segments), len(sections))
+    return sections
 
 
 _LANG_NAMES: dict[str, str] = {

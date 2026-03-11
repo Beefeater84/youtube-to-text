@@ -72,3 +72,8 @@ class PipelineResult:
 
     markdown_url: str
     duration_seconds: int
+
+
+class DependencyPending(Exception):
+    """Raised when a non-EN job cannot proceed because the EN base
+    transcript is not ready yet. The job has already been requeued."""
