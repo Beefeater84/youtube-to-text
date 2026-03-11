@@ -158,6 +158,7 @@ flowchart LR
 
 ### Следующие шаги
 - Фаза **v0.4**: мультиязычность — переводы в выбранные языки как отдельные job-ветки.
+- v0.4 — задача **4. Модуль parse_markdown.py** выполнена.
 
 ### Бэклог: Observability (после v0.3)
 1. **Sentry для worker** — подключить `@sentry/node` в `worker/src/index.ts`. Инфраструктура готова (`SENTRY_DSN_WORKER` уже передаётся в docker-compose), осталось инициализировать SDK и обернуть pipeline в error capture. Даст push/email-уведомления о любых ошибках worker-а.
