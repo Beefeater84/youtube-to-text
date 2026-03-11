@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import urllib.request
 from datetime import datetime, timezone
 
 from supabase import create_client, Client
@@ -122,9 +123,109 @@ def find_or_create_channel(channel_name: str, youtube_channel_id: str) -> str:
         "title": channel_name,
         "slug": slug,
         "thumbnail_url": None,
-    }).select("id").execute()
+    }).execute()
 
     return result.data[0]["id"]
+
+
+def create_sibling_transcript(
+    original_job: TranscriptJob,
+    *,
+    language: str,
+    slug: str,
+    markdown_url: str,
+    duration_seconds: int,
+    title: str,
+    thumbnail_url: str | None,
+    channel_id: str | None,
+) -> None:
+    """
+    Create an additional transcript row for the same video in a different language.
+    Used when the worker produces both the original-language and English versions.
+    Skips silently if the (video, language) pair already exists.
+    """
+    sb = get_supabase()
+    try:
+        sb.table("transcripts").insert({
+            "youtube_video_id": original_job.youtube_video_id,
+            "language": language,
+            "title": title,
+            "slug": slug,
+            "description": original_job.description,
+            "thumbnail_url": thumbnail_url,
+            "duration_seconds": duration_seconds,
+            "channel_id": channel_id,
+            "user_id": original_job.user_id,
+            "markdown_url": markdown_url,
+            "status": "done",
+            "published_at": datetime.now(timezone.utc).isoformat(),
+        }).execute()
+    except Exception as e:
+        if "duplicate" in str(e).lower() or "unique" in str(e).lower():
+            logger.info("sibling transcript already exists for %s/%s, skipping",
+                        original_job.youtube_video_id, language)
+        else:
+            raise
+
+
+def find_done_transcript(video_id: str, language: str) -> dict | None:
+    """Find a completed transcript for the given video and language. Used by the
+    translation pipeline to check whether the EN base version is ready."""
+    sb = get_supabase()
+    result = (
+        sb.table("transcripts")
+        .select("id, markdown_url, duration_seconds, title, thumbnail_url, channel_id")
+        .eq("youtube_video_id", video_id)
+        .eq("language", language)
+        .eq("status", "done")
+        .limit(1)
+        .execute()
+    )
+    if result.data and len(result.data) > 0:
+        return result.data[0]
+    return None
+
+
+def create_pending_job(
+    video_id: str,
+    language: str,
+    user_id: str | None,
+) -> None:
+    """Create a pending transcript job. Skips silently if the (video, language)
+    pair already exists. Used in UC3 to create the EN dependency job."""
+    sb = get_supabase()
+    slug = video_id if language == "en" else f"{video_id}-{language}"
+    try:
+        sb.table("transcripts").insert({
+            "youtube_video_id": video_id,
+            "language": language,
+            "title": video_id,
+            "slug": slug,
+            "status": "pending",
+            "user_id": user_id,
+        }).execute()
+    except Exception as e:
+        if "duplicate" in str(e).lower() or "unique" in str(e).lower():
+            logger.info("job already exists for %s/%s, skipping", video_id, language)
+        else:
+            raise
+
+
+def requeue_job(job_id: str) -> None:
+    """Return a job back to pending status so it can be picked up later.
+    Used in UC3 when the non-EN job must wait for the EN dependency."""
+    sb = get_supabase()
+    sb.table("transcripts").update({
+        "status": "pending",
+        "started_at": None,
+    }).eq("id", job_id).execute()
+
+
+def download_markdown_from_storage(markdown_url: str) -> str:
+    """Download a markdown file from Supabase Storage by its public URL.
+    Used in UC2 to fetch the EN transcript for translation."""
+    with urllib.request.urlopen(markdown_url) as resp:
+        return resp.read().decode("utf-8")
 
 
 def _slugify(text: str) -> str:

@@ -227,6 +227,6 @@ begin
      '/sample-transcripts/tech-stack-that-prints-money.md',
      'done', '2026-02-24T10:00:00Z')
 
-  on conflict (youtube_video_id) do nothing;
+  on conflict (youtube_video_id, language) do nothing;
 
 end $$;

@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import tempfile
+import urllib.request
 
 import yt_dlp
 
@@ -14,19 +15,20 @@ logger = logging.getLogger(__name__)
 _TMP_DIR = os.path.join(tempfile.gettempdir(), "yt-dlp")
 
 
-def fetch_transcript(video_id: str) -> FetchResult:
+def fetch_transcript(video_id: str, target_lang: str = "en") -> FetchResult:
     """
-    Extract video metadata and caption segments using the yt-dlp Python API.
+    Extract video metadata and caption segments using a single yt-dlp call.
+    If target_lang subtitles aren't available, falls back to the original
+    language by downloading directly from the URL in the info dict.
     Called as the first step of the processing pipeline.
     """
     url = f"https://www.youtube.com/watch?v={video_id}"
-
     os.makedirs(_TMP_DIR, exist_ok=True)
 
     ydl_opts: dict = {
         "writesubtitles": True,
         "writeautomaticsub": True,
-        "subtitleslangs": ["en"],
+        "subtitleslangs": [target_lang],
         "subtitlesformat": "json3/vtt/srt/best",
         "skip_download": True,
         "quiet": True,
@@ -49,20 +51,88 @@ def fetch_transcript(video_id: str) -> FetchResult:
         description=info.get("description", ""),
     )
 
-    segments = _parse_subtitles(video_id)
+    segments = _parse_subtitles(video_id, target_lang)
+    if segments:
+        logger.info("subtitle language: %s (requested)", target_lang)
+        return FetchResult(metadata=metadata, segments=segments, source_language=target_lang)
 
+    fallback_lang = _pick_fallback_language(info, target_lang)
+    if fallback_lang is None:
+        raise RuntimeError(f"No subtitles available for video {video_id}")
+
+    logger.info("no %s subtitles, falling back to %s", target_lang, fallback_lang)
+    _download_subtitle_from_info(info, video_id, fallback_lang)
+
+    segments = _parse_subtitles(video_id, fallback_lang)
     if not segments:
-        raise RuntimeError(f"No captions found for video {video_id}")
+        raise RuntimeError(
+            f"No captions found for {video_id} (tried {target_lang}, {fallback_lang})"
+        )
 
-    return FetchResult(metadata=metadata, segments=segments)
+    return FetchResult(metadata=metadata, segments=segments, source_language=fallback_lang)
 
 
-def _parse_subtitles(video_id: str) -> list[RawSegment]:
+def _pick_fallback_language(info: dict, exclude: str) -> str | None:
+    """
+    Choose the best fallback subtitle language from yt-dlp info dict,
+    skipping the language that already failed. Prefers manual subs over auto.
+    """
+    subs = info.get("subtitles") or {}
+    auto = info.get("automatic_captions") or {}
+
+    for lang in subs:
+        if lang != exclude and not lang.startswith("live_chat"):
+            return lang
+
+    original = info.get("language")
+    if original and original != exclude and original in auto:
+        return original
+
+    for lang in auto:
+        if lang != exclude and not lang.startswith("live_chat"):
+            return lang
+
+    return None
+
+
+def _download_subtitle_from_info(info: dict, video_id: str, lang: str) -> None:
+    """
+    Download a subtitle file directly from the URL found in the yt-dlp info dict.
+    Avoids a second yt-dlp session and the associated rate-limit risk.
+    """
+    subs = info.get("subtitles") or {}
+    auto = info.get("automatic_captions") or {}
+    formats = subs.get(lang) or auto.get(lang) or []
+
+    preferred_ext = ("json3", "vtt", "srt")
+    chosen = None
+    for ext in preferred_ext:
+        for fmt in formats:
+            if fmt.get("ext") == ext:
+                chosen = fmt
+                break
+        if chosen:
+            break
+
+    if not chosen and formats:
+        chosen = formats[0]
+
+    if not chosen:
+        raise RuntimeError(f"No downloadable subtitle format for {lang}")
+
+    ext = chosen.get("ext", "vtt")
+    out_path = os.path.join(_TMP_DIR, f"{video_id}.{lang}.{ext}")
+
+    logger.info("downloading %s subtitles (%s) directly", lang, ext)
+    urllib.request.urlretrieve(chosen["url"], out_path)
+
+
+def _parse_subtitles(video_id: str, lang: str) -> list[RawSegment]:
     """Read and parse the json3 subtitle file written by yt-dlp."""
-    json3_path = os.path.join(_TMP_DIR, f"{video_id}.en.json3")
+    json3_path = os.path.join(_TMP_DIR, f"{video_id}.{lang}.json3")
 
     if not os.path.exists(json3_path):
-        vtt_path = os.path.join(_TMP_DIR, f"{video_id}.en.vtt")
+        vtt_path = os.path.join(_TMP_DIR, f"{video_id}.{lang}.vtt")
         if os.path.exists(vtt_path):
             return _parse_vtt(vtt_path)
         return []
@@ -87,7 +157,7 @@ def _parse_subtitles(video_id: str) -> list[RawSegment]:
             duration=event.get("dDurationMs", 0) / 1000,
         ))
 
-    _cleanup_tmp(video_id)
+    _cleanup_tmp(video_id, lang)
     return segments
 
 
@@ -131,9 +201,9 @@ def _parse_vtt(path: str) -> list[RawSegment]:
     return segments
 
 
-def _cleanup_tmp(video_id: str) -> None:
+def _cleanup_tmp(video_id: str, lang: str) -> None:
     """Remove temporary subtitle files after parsing."""
-    for ext in (".en.json3", ".en.vtt", ".en.srt"):
+    for ext in (f".{lang}.json3", f".{lang}.vtt", f".{lang}.srt"):
         path = os.path.join(_TMP_DIR, f"{video_id}{ext}")
         if os.path.exists(path):
             os.remove(path)

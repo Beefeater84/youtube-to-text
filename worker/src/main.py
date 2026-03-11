@@ -19,6 +19,7 @@ from src.db import (
     mark_job_failed,
     recover_stale_jobs,
 )
+from src.models import DependencyPending
 from src.pipeline.run import run_pipeline
 
 logging.basicConfig(
@@ -70,6 +71,8 @@ def main() -> None:
                 result = run_pipeline(job)
                 mark_job_done(job.id, result.markdown_url, result.duration_seconds)
                 logger.info("job %s done", job.id)
+            except DependencyPending:
+                logger.info("job %s waiting for EN dependency, requeued", job.id)
             except Exception as e:
                 message = str(e) or "Unknown pipeline error"
                 logger.error("job %s failed: %s", job.id, message)

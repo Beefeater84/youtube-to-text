@@ -54,7 +54,11 @@ export function CreateTranscriptForm({
 
     setStatus("submitting");
 
-    const result = await submitTranscriptJob(videoId, languages);
+    const submittedLanguages = languages.includes("en")
+      ? languages
+      : ["en", ...languages];
+
+    const result = await submitTranscriptJob(videoId, submittedLanguages);
 
     if (!result.success) {
       setErrorMessage(result.error ?? "Something went wrong.");
@@ -63,6 +67,7 @@ export function CreateTranscriptForm({
     }
 
     setUrl("");
+    setLanguages(["en"]);
     setStatus("success");
     setTimeout(() => setStatus("idle"), 3000);
   };
