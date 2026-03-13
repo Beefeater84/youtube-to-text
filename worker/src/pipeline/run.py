@@ -140,11 +140,12 @@ def _run_translation_pipeline(
     en_title = en_record.get("title") or job.youtube_video_id
     channel_id = en_record.get("channel_id")
 
-    base_slug = slugify(en_title)
+    translated_title = translated_sections[0].title if translated_sections else en_title
+    lang_slug = slugify(translated_title)
     enrich_transcript(
         job.id,
         title=en_title,
-        slug=base_slug,
+        slug=lang_slug,
         thumbnail_url=en_record.get("thumbnail_url") or "",
         duration_seconds=duration,
         channel_id=channel_id or "",
@@ -191,10 +192,11 @@ def _publish_source_language(
 
     md_url = upload_to_storage(job.youtube_video_id, source_lang, md)
 
+    lang_slug = f"{base_slug}-{source_lang}"
     create_sibling_transcript(
         job,
         language=source_lang,
-        slug=base_slug,
+        slug=lang_slug,
         markdown_url=md_url,
         duration_seconds=duration,
         title=meta.title,
