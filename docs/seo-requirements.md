@@ -44,3 +44,7 @@ Requirements every transcript page must satisfy. Use this as a checklist during 
 - Clean, readable slugs: `/transcripts/{slug}`.
 - No query parameters required to view content.
 - Trailing slashes consistent (Next.js default: no trailing slash).
+- Slugs must be in English, but if they were originally in another language, transliteration should be used. /ru/kak-vybrat-noutbuk
+- Each page must link to its translations. /en/apple must have an hreflang="ru" tag pointing to /ru/yabloko.
+- Self-referencing Canonical: On the /ru/yabloko page, the canonical link must point to the page itself, not to the English version.
+
