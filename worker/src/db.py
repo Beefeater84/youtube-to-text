@@ -8,6 +8,7 @@ from supabase import create_client, Client
 
 from src import config
 from src.models import TranscriptJob
+from src.slugify import slugify
 
 logger = logging.getLogger(__name__)
 
@@ -111,7 +112,7 @@ def enrich_transcript(
 def find_or_create_channel(channel_name: str, youtube_channel_id: str) -> str:
     """Find an existing channel by YouTube ID or create a new one. Returns channel UUID."""
     sb = get_supabase()
-    slug = _slugify(channel_name)
+    slug = slugify(channel_name)
 
     result = sb.table("channels").select("id").eq("slug", slug).execute()
 
@@ -226,14 +227,3 @@ def download_markdown_from_storage(markdown_url: str) -> str:
     Used in UC2 to fetch the EN transcript for translation."""
     with urllib.request.urlopen(markdown_url) as resp:
         return resp.read().decode("utf-8")
-
-
-def _slugify(text: str) -> str:
-    """Convert text to a URL-safe slug."""
-    import re
-    slug = text.lower()
-    slug = re.sub(r"[^\w\s-]", "", slug)
-    slug = re.sub(r"[\s_]+", "-", slug)
-    slug = re.sub(r"-+", "-", slug)
-    slug = slug.strip("-")
-    return slug[:80]
