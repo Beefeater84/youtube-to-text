@@ -28,3 +28,15 @@ export interface Transcript {
 export interface TranscriptWithChannel extends Transcript {
   channels: Channel;
 }
+
+export interface VideoGroup {
+  youtube_video_id: string;
+  title: string;
+  slug: string;
+  thumbnail_url: string | null;
+  channel_title: string | null;
+  channel_slug: string | null;
+  languages: string[];
+  duration_seconds: number | null;
+  created_at: string;
+}

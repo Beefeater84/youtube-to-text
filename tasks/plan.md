@@ -41,15 +41,22 @@ flowchart LR
   - Отдельный worker с очередью и ретраями.
   - Шаги: transcript fetch -> cleanup -> sections+headings -> EN output -> сохранение `.md` в S3.
   - Сохранение timestamp-секций для jump-to-video.
-- **v0.4 — Мультиязычность и UX качества**
+- **v0.4 — Главная страница: реальные данные + пагинация**
+  - Заменить захардкоженные моки на реальные данные из Supabase.
+  - Транскрипты: пагинированный список (20 на странице), группировка по `youtube_video_id` — одна карточка на видео с бейджами доступных языков.
+  - Каналы: первые 5 из БД с количеством транскриптов (sidebar «Browse by Channel»).
+  - Теги/Топики: первые 5 из БД (sidebar «Browse by Topic», таблица `tags` через `channel_tags`).
+  - Переиспользуемый компонент `TranscriptCard`.
+  - Компонент пагинации.
+- **v0.5 — Мультиязычность и UX качества**
   - Переводы в выбранные языки как отдельные job-ветки.
   - Страницы версий перевода, контроль ошибок и повторный запуск задачи.
-- **v0.5 — Токены без реальной оплаты**
+- **v0.6 — Токены без реальной оплаты**
   - Внутренний token ledger (дебет/кредит за обработку).
   - Ограничение создания задач по балансу.
-- **v0.6 — Реальные платежи**
+- **v0.7 — Реальные платежи**
   - Stripe/LemonSqueezy интеграция, webhook, пополнение токенов.
-- **v0.7 — Семантический поиск (beta)**
+- **v0.8 — Семантический поиск (beta)**
   - Индексация транскриптов в векторное хранилище.
   - Поиск по смыслу с фильтрами (канал/теги).
 
@@ -156,8 +163,87 @@ flowchart LR
   - `deploy/docker-compose.prod.yml`: убран `NODE_ENV`, команда `python -m src.main`.
 - Dashboard: показывает "Processing..." пока worker не обновил title.
 
+### В работе: v0.4 — Главная страница: реальные данные + пагинация
+
+#### Цель
+Заменить mock-данные на главной странице (`app/page.tsx`) реальными из Supabase.
+Одно видео с несколькими языковыми версиями — одна карточка с бейджами языков.
+Пагинация по 20 записей на страницу. Sidebar: каналы и теги из БД.
+
+#### FSD-архитектура (новые и изменённые слайсы)
+
+**1. `entities/channel/` — НОВЫЙ слайс**
+- `model/types.ts` — `ChannelWithCount` (channel + `transcript_count`).
+- `api/get-channels.ts` — `getTopChannels(limit: number)` → первые N каналов, отсортированных по количеству `done`-транскриптов.
+- `index.ts` — public API.
+- *Тип `Channel` уже есть в `entities/transcript/model/types.ts` — вынести в `entities/channel/` и реэкспортировать из transcript.*
+
+**2. `entities/tag/` — НОВЫЙ слайс**
+- `model/types.ts` — `Tag` (`id`, `name`, `slug`).
+- `api/get-tags.ts` — `getTopTags(limit: number)` → первые N тегов (пока без сортировки по популярности, просто первые 5).
+- `index.ts` — public API.
+
+**3. `entities/transcript/` — РАСШИРЕНИЕ**
+- `model/types.ts` — добавить тип `VideoGroup`:
+  ```ts
+  interface VideoGroup {
+    youtube_video_id: string;
+    title: string;
+    slug: string;           // slug EN-версии (основной) для ссылки
+    thumbnail_url: string | null;
+    channel: Channel | null;
+    languages: string[];    // ['en', 'ru', 'es', ...]
+    duration_seconds: number | null;
+    created_at: string;     // самая ранняя created_at среди версий
+  }
+  ```
+- `api/get-transcripts.ts` — НОВЫЙ файл (рядом с существующим `get-transcript.ts`):
+  - `getLatestVideoGroups(page, pageSize)` → пагинированный список `VideoGroup[]`.
+    Логика: SELECT done-транскрипты, GROUP BY `youtube_video_id`, собрать массив `languages`, взять данные из EN-версии (или первой доступной), JOIN `channels`.
+  - `getVideoGroupsTotalCount()` → `COUNT(DISTINCT youtube_video_id)` где `status = 'done'`.
+- `ui/TranscriptCard.tsx` — НОВЫЙ компонент:
+  - Принимает `VideoGroup`.
+  - Показывает: channel name, title, description (если есть), бейджи языков сверху.
+  - Ссылка ведёт на `/transcripts/{slug}` (EN-версии).
+- `ui/index.ts` — реэкспорт `TranscriptCard`.
+
+**4. `shared/ui/Pagination.tsx` — НОВЫЙ компонент**
+- Генерик-компонент пагинации (номера страниц, prev/next).
+- Работает через URL `searchParams` (`?page=2`) — совместимо с SSR/ISR.
+- Реэкспорт через `shared/ui/index.ts`.
+
+**5. `app/page.tsx` — РЕФАКТОРИНГ**
+- Серверный компонент (async).
+- Читает `searchParams.page` для пагинации.
+- Вызывает:
+  - `getLatestVideoGroups(page, 20)` + `getVideoGroupsTotalCount()` из `entities/transcript`.
+  - `getTopChannels(5)` из `entities/channel`.
+  - `getTopTags(5)` из `entities/tag`.
+- Рендерит `TranscriptCard` для каждой группы + `Pagination` под списком.
+- Sidebar: реальные каналы и теги вместо моков.
+- Удалить `MOCK_TAGS`, `MOCK_CHANNELS` и mock-карточки.
+
+#### Задачи (порядок выполнения)
+
+| # | Задача | FSD-слой | Файлы |
+|---|--------|----------|-------|
+| 1 | Вынести `Channel` тип в `entities/channel/` | entities | `entities/channel/model/types.ts`, `entities/channel/index.ts` |
+| 2 | API: `getTopChannels` | entities | `entities/channel/api/get-channels.ts` |
+| 3 | Создать `entities/tag/` с типами и API | entities | `entities/tag/model/types.ts`, `entities/tag/api/get-tags.ts`, `entities/tag/index.ts` |
+| 4 | Добавить `VideoGroup` тип | entities | `entities/transcript/model/types.ts` |
+| 5 | API: `getLatestVideoGroups` + `getVideoGroupsTotalCount` | entities | `entities/transcript/api/get-transcripts.ts` |
+| 6 | UI: `TranscriptCard` компонент | entities | `entities/transcript/ui/TranscriptCard.tsx`, `entities/transcript/ui/index.ts` |
+| 7 | `Pagination` компонент | shared | `shared/ui/Pagination.tsx`, `shared/ui/index.ts` |
+| 8 | Рефакторинг `app/page.tsx` — собрать всё вместе | app | `app/page.tsx` |
+
+#### Заметки по реализации
+- Группировка по `youtube_video_id` может быть сделана через Supabase RPC (SQL-функция) или через два запроса: один за distinct video_id + count, второй за полные данные. RPC предпочтительнее для производительности.
+- `slug` в карточке — всегда ведёт на EN-версию. Если EN нет — на первый доступный язык.
+- ISR `revalidate: 3600` (1 час) на главной — как было раньше.
+- `searchParams` для пагинации — стандартный паттерн Next.js App Router для серверных компонентов.
+
 ### Следующие шаги
-- После завершения мультиязычности: улучшить промпт OpenAI (будет расписано позже).
+**Сделано** После завершения мультиязычности: улучшить промпт OpenAI (будет расписано позже).
 - После завершения мультиязычности: переработать dashboard — группировать языковые версии одного видео в одну запись со списком языков; убедиться, что slug всегда англоязычный, чтобы страница корректно загружалась.
 
 ### Бэклог: Observability (после v0.3)

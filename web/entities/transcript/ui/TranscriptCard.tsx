@@ -1,0 +1,58 @@
+import Link from "next/link";
+import type { VideoGroup } from "../model/types";
+
+/**
+ * Displays a single video group as a newspaper-style card.
+ * Shows channel name, title, and language badges.
+ * Used on the homepage transcript list and potentially on channel pages.
+ */
+export function TranscriptCard({ video }: { video: VideoGroup }) {
+  return (
+    <article className="border-[1.5px] border-ink bg-paper px-4 py-3 shadow-[0_0_0_1px_rgba(0,0,0,0.04)]">
+      <header className="mb-1 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+        {video.channel_title && video.channel_slug ? (
+          <Link
+            href={`/channels/${video.channel_slug}`}
+            className="font-label text-[0.7rem] uppercase tracking-[0.12em] text-ink-muted transition-colors hover:text-ink"
+          >
+            {video.channel_title}
+          </Link>
+        ) : (
+          <span className="font-label text-[0.7rem] uppercase tracking-[0.12em] text-ink-muted">
+            Unknown channel
+          </span>
+        )}
+        <div className="flex gap-1">
+          {video.languages.map((lang) => (
+            <span
+              key={lang}
+              className="inline-block border border-ink/30 px-1.5 py-0.5 font-label text-[0.6rem] uppercase leading-none tracking-wider text-ink-muted"
+            >
+              {lang}
+            </span>
+          ))}
+        </div>
+      </header>
+      <h3 className="font-headline text-[1rem] font-semibold leading-snug -tracking-[0.01em]">
+        <Link
+          href={`/transcripts/${video.slug}`}
+          className="decoration-1 underline-offset-2 hover:underline"
+        >
+          {video.title}
+        </Link>
+      </h3>
+      {video.duration_seconds && (
+        <p className="mt-1 font-label text-[0.65rem] uppercase tracking-[0.08em] text-ink-faint">
+          {formatDuration(video.duration_seconds)}
+        </p>
+      )}
+    </article>
+  );
+}
+
+function formatDuration(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m} min`;
+}
