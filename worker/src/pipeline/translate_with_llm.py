@@ -124,6 +124,44 @@ def _call_llm(
     ]
 
 
+def translate_title(
+    title: str,
+    source_language: str,
+    target_language: str,
+) -> str:
+    """
+    Translate a single video title string between languages.
+    Used when the EN pipeline processes a non-English video and needs
+    an English title for the DB record and markdown file.
+    """
+    if source_language == target_language:
+        return title
+
+    client = OpenAI(api_key=config.OPENAI_API_KEY)
+    source_name = _lang_code_to_name(source_language)
+    target_name = _lang_code_to_name(target_language)
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    f"Translate the following video title from {source_name} "
+                    f"to {target_name}. Return ONLY the translated title, "
+                    "nothing else. Keep proper nouns and brand names as-is."
+                ),
+            },
+            {"role": "user", "content": title},
+        ],
+        temperature=0.3,
+        max_tokens=200,
+    )
+
+    translated = (response.choices[0].message.content or "").strip()
+    return translated or title
+
+
 _LANG_NAMES: dict[str, str] = {
     "en": "English",
     "ru": "Russian",

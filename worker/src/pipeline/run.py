@@ -23,7 +23,7 @@ from src.pipeline.fetch_transcript import fetch_transcript
 from src.pipeline.generate_markdown import generate_markdown
 from src.pipeline.parse_markdown import parse_markdown_to_sections
 from src.pipeline.process_with_llm import process_with_llm
-from src.pipeline.translate_with_llm import translate_sections
+from src.pipeline.translate_with_llm import translate_sections, translate_title
 from src.pipeline.upload_to_storage import upload_to_storage
 from src.slugify import slugify
 
@@ -89,13 +89,24 @@ def _run_en_pipeline(job: TranscriptJob) -> PipelineResult:
 
         logger.info("step 4/5: translating %s → en", source_lang)
         en_sections = translate_sections(source_sections, source_lang, "en")
+        en_title = translate_title(meta.title, source_lang, "en")
+        en_slug = slugify(en_title)
+        enrich_transcript(
+            job.id,
+            title=en_title,
+            slug=en_slug,
+            thumbnail_url=meta.thumbnail_url,
+            duration_seconds=duration,
+            channel_id=channel_id,
+        )
     else:
         en_sections = source_sections
+        en_title = meta.title
 
     logger.info("step 5/5: generating markdown for en (%d sections)", len(en_sections))
     md = generate_markdown(
         video_id=job.youtube_video_id,
-        title=meta.title,
+        title=en_title,
         channel_name=meta.channel_name,
         duration=duration,
         language="en",
