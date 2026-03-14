@@ -69,7 +69,12 @@ def main() -> None:
 
             try:
                 result = run_pipeline(job)
-                mark_job_done(job.id, result.markdown_url, result.duration_seconds)
+                mark_job_done(
+                    job.id,
+                    result.markdown_url,
+                    result.duration_seconds,
+                    video_id=job.youtube_video_id,
+                )
                 logger.info("job %s done", job.id)
             except DependencyPending:
                 logger.info("job %s waiting for EN dependency, requeued", job.id)

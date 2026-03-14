@@ -5,11 +5,11 @@ import logging
 from src.db import (
     create_pending_job,
     create_sibling_transcript,
+    defer_for_dependency,
     download_markdown_from_storage,
     enrich_transcript,
     find_done_transcript,
     find_or_create_channel,
-    requeue_job,
 )
 from src.models import (
     DependencyPending,
@@ -120,7 +120,7 @@ def _run_translation_pipeline(
     if en_record is None:
         logger.info("EN transcript not ready for %s, creating dependency", job.youtube_video_id)
         create_pending_job(job.youtube_video_id, "en", job.user_id)
-        requeue_job(job.id)
+        defer_for_dependency(job.id)
         raise DependencyPending(
             f"EN transcript not ready for {job.youtube_video_id}, job requeued"
         )

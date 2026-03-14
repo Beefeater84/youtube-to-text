@@ -62,8 +62,15 @@ def ensure_storage_bucket() -> None:
             logger.error("createBucket error: %s", e)
 
 
-def mark_job_done(job_id: str, markdown_url: str, duration_seconds: int) -> None:
-    """Mark a transcript job as successfully completed."""
+def mark_job_done(
+    job_id: str,
+    markdown_url: str,
+    duration_seconds: int,
+    *,
+    video_id: str | None = None,
+) -> None:
+    """Mark a transcript job as successfully completed.
+    When video_id is provided, also wakes any non-EN jobs waiting on this video."""
     sb = get_supabase()
     sb.table("transcripts").update({
         "status": "done",
@@ -72,6 +79,9 @@ def mark_job_done(job_id: str, markdown_url: str, duration_seconds: int) -> None
         "published_at": datetime.now(timezone.utc).isoformat(),
         "error_message": None,
     }).eq("id", job_id).execute()
+
+    if video_id:
+        wake_dependents(video_id)
 
 
 def mark_job_failed(job_id: str, error_message: str) -> None:
@@ -212,14 +222,25 @@ def create_pending_job(
             raise
 
 
-def requeue_job(job_id: str) -> None:
-    """Return a job back to pending status so it can be picked up later.
-    Used in UC3 when the non-EN job must wait for the EN dependency."""
+def defer_for_dependency(job_id: str) -> None:
+    """Park a job in 'waiting_dependency' status until its EN dependency is done.
+    These jobs are invisible to grab_pending_transcript and wake up automatically
+    via wake_dependents() when the EN transcript completes."""
     sb = get_supabase()
     sb.table("transcripts").update({
-        "status": "pending",
+        "status": "waiting_dependency",
         "started_at": None,
     }).eq("id", job_id).execute()
+
+
+def wake_dependents(video_id: str) -> None:
+    """Move all waiting_dependency jobs for a video back to pending.
+    Called after an EN transcript is marked done so translations can proceed."""
+    sb = get_supabase()
+    result = sb.rpc("wake_dependent_jobs", {"p_video_id": video_id}).execute()
+    woken = result.data
+    if isinstance(woken, int) and woken > 0:
+        logger.info("woke %d dependent job(s) for %s", woken, video_id)
 
 
 def download_markdown_from_storage(markdown_url: str) -> str:
