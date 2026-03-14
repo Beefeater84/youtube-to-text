@@ -17,27 +17,22 @@ _TMP_DIR = os.path.join(tempfile.gettempdir(), "yt-dlp")
 
 def fetch_transcript(video_id: str, target_lang: str = "en") -> FetchResult:
     """
-    Extract video metadata and caption segments using a single yt-dlp call.
-    If target_lang subtitles aren't available, falls back to the original
-    language by downloading directly from the URL in the info dict.
+    Extract video metadata and caption segments via yt-dlp.
+    Fetches only metadata first (download=False) to avoid 429 errors from
+    YouTube subtitle endpoints, then downloads the chosen subtitle manually.
     Called as the first step of the processing pipeline.
     """
     url = f"https://www.youtube.com/watch?v={video_id}"
     os.makedirs(_TMP_DIR, exist_ok=True)
 
     ydl_opts: dict = {
-        "writesubtitles": True,
-        "writeautomaticsub": True,
-        "subtitleslangs": [target_lang],
-        "subtitlesformat": "json3/vtt/srt/best",
         "skip_download": True,
         "quiet": True,
         "no_warnings": True,
-        "outtmpl": os.path.join(_TMP_DIR, "%(id)s"),
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=True)
+        info = ydl.extract_info(url, download=False)
 
     if info is None:
         raise RuntimeError(f"yt-dlp returned no info for {video_id}")
@@ -51,45 +46,56 @@ def fetch_transcript(video_id: str, target_lang: str = "en") -> FetchResult:
         description=info.get("description", ""),
     )
 
-    segments = _parse_subtitles(video_id, target_lang)
-    if segments:
-        logger.info("subtitle language: %s (requested)", target_lang)
-        return FetchResult(metadata=metadata, segments=segments, source_language=target_lang)
-
-    fallback_lang = _pick_fallback_language(info, target_lang)
-    if fallback_lang is None:
+    chosen_lang = _choose_subtitle_language(info, target_lang)
+    if chosen_lang is None:
         raise RuntimeError(f"No subtitles available for video {video_id}")
 
-    logger.info("no %s subtitles, falling back to %s", target_lang, fallback_lang)
-    _download_subtitle_from_info(info, video_id, fallback_lang)
+    if chosen_lang != target_lang:
+        logger.info("no %s subtitles, falling back to %s", target_lang, chosen_lang)
+    else:
+        logger.info("subtitle language: %s (requested)", target_lang)
 
-    segments = _parse_subtitles(video_id, fallback_lang)
+    _download_subtitle_from_info(info, video_id, chosen_lang)
+    segments = _parse_subtitles(video_id, chosen_lang)
+
     if not segments:
         raise RuntimeError(
-            f"No captions found for {video_id} (tried {target_lang}, {fallback_lang})"
+            f"No captions found for {video_id} (language {chosen_lang})"
         )
 
-    return FetchResult(metadata=metadata, segments=segments, source_language=fallback_lang)
+    return FetchResult(metadata=metadata, segments=segments, source_language=chosen_lang)
 
 
-def _pick_fallback_language(info: dict, exclude: str) -> str | None:
+def _choose_subtitle_language(info: dict, target_lang: str) -> str | None:
     """
-    Choose the best fallback subtitle language from yt-dlp info dict,
-    skipping the language that already failed. Prefers manual subs over auto.
+    Pick the best subtitle language from yt-dlp info dict.
+    Prefers manual subs in target_lang, then the video's original language
+    (manual or auto-generated from speech), then auto-translated target_lang
+    as a last resort — auto-translations are generated on-the-fly by YouTube
+    and are more likely to be rate-limited.
     """
     subs = info.get("subtitles") or {}
     auto = info.get("automatic_captions") or {}
+    original = info.get("language")
+
+    if target_lang in subs:
+        return target_lang
+
+    if original and original != target_lang:
+        if original in subs:
+            return original
+        if original in auto:
+            return original
 
     for lang in subs:
-        if lang != exclude and not lang.startswith("live_chat"):
+        if not lang.startswith("live_chat"):
             return lang
 
-    original = info.get("language")
-    if original and original != exclude and original in auto:
-        return original
+    if target_lang in auto:
+        return target_lang
 
     for lang in auto:
-        if lang != exclude and not lang.startswith("live_chat"):
+        if not lang.startswith("live_chat"):
             return lang
 
     return None

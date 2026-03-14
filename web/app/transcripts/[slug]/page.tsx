@@ -133,7 +133,7 @@ export default async function TranscriptPage({ params }: PageProps) {
               {transcript.title}
             </h1>
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-label text-[0.7rem] uppercase tracking-[0.1em] text-ink-muted">
-              <span>{transcript.channels.title}</span>
+              <Link href={`/channels/${transcript.channels.slug}`} className="hover:text-ink">{transcript.channels.title}</Link>
               <span aria-hidden="true">·</span>
               {transcript.duration_seconds && (
                 <>

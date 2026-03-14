@@ -45,10 +45,13 @@ Expected behavior:
 
 ### Use Case 4
 
-- We receive a request to translate a video, and the video has no English subtitles.
+- We receive a request to process a video whose original language is not English.
+- The video may or may not have auto-translated English subtitles on YouTube.
 
 Expected behavior:
 
-- Detect the language of the video.
-- Take the existing subtitles and send them for translation into English.
-- Then follow the standard pipeline: cleaning and structuring with OpenAI, saving to Markdown, publishing on the website.
+- Prefer the video's original-language subtitles (manual or auto-generated from speech) over YouTube's auto-translated English — they are higher quality and less likely to be rate-limited.
+- Clean and structure the original-language transcript with LLM.
+- Publish the original-language transcript as a sibling record.
+- Translate the cleaned transcript into English with LLM.
+- Then follow the standard pipeline: saving to Markdown, publishing on the website.
