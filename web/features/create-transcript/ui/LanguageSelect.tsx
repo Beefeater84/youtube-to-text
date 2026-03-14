@@ -13,6 +13,8 @@ const AVAILABLE_LANGUAGES = [
   { code: "ar", label: "العربية" },
   { code: "hi", label: "हिन्दी" },
   { code: "tr", label: "Türkçe" },
+  { code: "fi", label: "Suomi" },
+  { code: "cs", label: "Čeština" },
 ] as const;
 
 interface LanguageSelectProps {
