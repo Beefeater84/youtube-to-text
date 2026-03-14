@@ -171,6 +171,21 @@ describe("submitTranscriptJob", () => {
     expect(mockInsert).not.toHaveBeenCalled();
   });
 
+  it("does not update records with waiting_dependency status (UC5)", async () => {
+    const { mockUpdate, mockInsert } = setupMock({
+      existingRecords: [
+        { id: "rec-1", language: "en", status: "processing" },
+        { id: "rec-2", language: "ru", status: "waiting_dependency" },
+      ],
+    });
+
+    const result = await submitTranscriptJob("abc123", ["en", "ru"]);
+
+    expect(result).toEqual({ success: true });
+    expect(mockUpdate).not.toHaveBeenCalled();
+    expect(mockInsert).not.toHaveBeenCalled();
+  });
+
   it("returns error when insert fails", async () => {
     setupMock({
       existingRecords: [],

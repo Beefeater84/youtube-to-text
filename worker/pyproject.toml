@@ -8,6 +8,7 @@ dependencies = [
     "supabase",
     "openai",
     "python-dotenv",
+    "Unidecode",
 ]
 
 [project.optional-dependencies]

@@ -1,16 +1,15 @@
 from __future__ import annotations
 
 import logging
-import re
 
 from src.db import (
     create_pending_job,
     create_sibling_transcript,
+    defer_for_dependency,
     download_markdown_from_storage,
     enrich_transcript,
     find_done_transcript,
     find_or_create_channel,
-    requeue_job,
 )
 from src.models import (
     DependencyPending,
@@ -26,18 +25,9 @@ from src.pipeline.parse_markdown import parse_markdown_to_sections
 from src.pipeline.process_with_llm import process_with_llm
 from src.pipeline.translate_with_llm import translate_sections
 from src.pipeline.upload_to_storage import upload_to_storage
+from src.slugify import slugify
 
 logger = logging.getLogger(__name__)
-
-
-def _slugify(text: str) -> str:
-    """Convert text to a URL-safe slug."""
-    slug = text.lower()
-    slug = re.sub(r"[^\w\s-]", "", slug)
-    slug = re.sub(r"[\s_]+", "-", slug)
-    slug = re.sub(r"-+", "-", slug)
-    slug = slug.strip("-")
-    return slug[:80]
 
 
 def run_pipeline(job: TranscriptJob) -> PipelineResult:
@@ -64,11 +54,11 @@ def _run_en_pipeline(job: TranscriptJob) -> PipelineResult:
 
     logger.info("step 2/5: enriching DB record with metadata")
     channel_id = find_or_create_channel(meta.channel_name, meta.channel_id)
-    base_slug = _slugify(meta.title)
+    base_slug = slugify(meta.title)
     enrich_transcript(
         job.id,
         title=meta.title,
-        slug=f"{base_slug}-{job.youtube_video_id}",
+        slug=base_slug,
         thumbnail_url=meta.thumbnail_url,
         duration_seconds=meta.duration,
         channel_id=channel_id,
@@ -130,7 +120,7 @@ def _run_translation_pipeline(
     if en_record is None:
         logger.info("EN transcript not ready for %s, creating dependency", job.youtube_video_id)
         create_pending_job(job.youtube_video_id, "en", job.user_id)
-        requeue_job(job.id)
+        defer_for_dependency(job.id)
         raise DependencyPending(
             f"EN transcript not ready for {job.youtube_video_id}, job requeued"
         )
@@ -150,11 +140,12 @@ def _run_translation_pipeline(
     en_title = en_record.get("title") or job.youtube_video_id
     channel_id = en_record.get("channel_id")
 
-    base_slug = _slugify(en_title)
+    translated_title = translated_sections[0].title if translated_sections else en_title
+    lang_slug = slugify(translated_title)
     enrich_transcript(
         job.id,
         title=en_title,
-        slug=f"{base_slug}-{job.youtube_video_id}-{target_lang}",
+        slug=lang_slug,
         thumbnail_url=en_record.get("thumbnail_url") or "",
         duration_seconds=duration,
         channel_id=channel_id or "",
@@ -201,10 +192,11 @@ def _publish_source_language(
 
     md_url = upload_to_storage(job.youtube_video_id, source_lang, md)
 
+    lang_slug = f"{base_slug}-{source_lang}"
     create_sibling_transcript(
         job,
         language=source_lang,
-        slug=f"{base_slug}-{job.youtube_video_id}-{source_lang}",
+        slug=lang_slug,
         markdown_url=md_url,
         duration_seconds=duration,
         title=meta.title,

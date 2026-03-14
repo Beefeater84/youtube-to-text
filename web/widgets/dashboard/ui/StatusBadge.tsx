@@ -8,6 +8,7 @@ const STATUS_STYLES: Record<Status, string> = {
   processing: "border-ink text-ink-muted animate-pulse",
   done: "border-ink bg-ink text-paper",
   failed: "border-ink text-ink-muted",
+  waiting_dependency: "border-ink text-ink-muted animate-pulse",
 };
 
 const STATUS_LABELS: Record<Status, string> = {
@@ -16,6 +17,7 @@ const STATUS_LABELS: Record<Status, string> = {
   processing: "Processing",
   done: "Done",
   failed: "Failed",
+  waiting_dependency: "Waiting for EN",
 };
 
 /**

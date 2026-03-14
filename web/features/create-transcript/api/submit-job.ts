@@ -7,7 +7,7 @@ interface SubmitResult {
   error?: string;
 }
 
-const ACTIVE_STATUSES = ["done", "processing", "queued"];
+const ACTIVE_STATUSES = ["done", "processing", "queued", "waiting_dependency"];
 
 /**
  * Server Action: validates the user, checks for duplicates, re-queues
