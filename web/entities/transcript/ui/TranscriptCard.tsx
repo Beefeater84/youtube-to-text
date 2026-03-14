@@ -42,18 +42,18 @@ export function TranscriptCard({ video }: { video: VideoGroup }) {
           {video.title}
         </Link>
       </h3>
-      {video.duration_seconds && (
-        <p className="mt-1 font-label text-[0.65rem] uppercase tracking-[0.08em] text-ink-faint">
-          {formatDuration(video.duration_seconds)}
-        </p>
-      )}
+      <p className="mt-1 font-label text-[0.65rem] uppercase tracking-[0.08em] text-ink-faint">
+        {formatDate(video.created_at)}
+      </p>
     </article>
   );
 }
 
-function formatDuration(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  if (h > 0) return `${h}h ${m}m`;
-  return `${m} min`;
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
