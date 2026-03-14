@@ -1,7 +1,8 @@
 import {
   fetchTranscriptMarkdown,
   getAllTranscriptSlugs,
-  getTranscriptBySlug,
+  getTranscriptPageData,
+  LanguageSwitcher,
 } from "@/entities/transcript";
 import {
   VideoPlayer,
@@ -14,6 +15,7 @@ import {
 } from "@/widgets/transcript-article";
 import { AuthCTA } from "@/widgets/auth-cta";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 interface PageProps {
@@ -31,12 +33,16 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const transcript = await getTranscriptBySlug(slug);
+  const { transcript, languages } = await getTranscriptPageData(slug);
   if (!transcript) return { title: "Transcript Not Found" };
 
   const description =
     transcript.description ??
     `Read the full transcript of "${transcript.title}" by ${transcript.channels.title}.`;
+
+  const languageAlternates = Object.fromEntries(
+    languages.map((l) => [l.language, `/transcripts/${l.slug}`]),
+  );
 
   return {
     title: `${transcript.title} — YouTube to Text`,
@@ -49,13 +55,14 @@ export async function generateMetadata({
     },
     alternates: {
       canonical: `/transcripts/${transcript.slug}`,
+      languages: languageAlternates,
     },
   };
 }
 
 export default async function TranscriptPage({ params }: PageProps) {
   const { slug } = await params;
-  const transcript = await getTranscriptBySlug(slug);
+  const { transcript, languages } = await getTranscriptPageData(slug);
   if (!transcript) notFound();
 
   const markdownUrl = transcript.markdown_url;
@@ -102,16 +109,16 @@ export default async function TranscriptPage({ params }: PageProps) {
           aria-label="Breadcrumb"
           className="mb-4 font-label text-[0.65rem] uppercase tracking-[0.1em] text-ink-ghost"
         >
-          <a href="/" className="hover:text-ink">
+          <Link href="/" className="hover:text-ink">
             Home
-          </a>
+          </Link>
           <span className="mx-1.5">›</span>
-          <a
+          <Link
             href={`/channels/${transcript.channels.slug}`}
             className="hover:text-ink"
           >
             {transcript.channels.title}
-          </a>
+          </Link>
           <span className="mx-1.5">›</span>
           <span className="text-ink-muted">{transcript.title}</span>
         </nav>
@@ -146,6 +153,14 @@ export default async function TranscriptPage({ params }: PageProps) {
                   </time>
                 </>
               )}
+            </div>
+
+            {/* Language versions */}
+            <div className="mt-3">
+              <LanguageSwitcher
+                languages={languages}
+                currentLanguage={transcript.language}
+              />
             </div>
           </header>
 

@@ -29,6 +29,11 @@ export interface TranscriptWithChannel extends Transcript {
   channels: Channel;
 }
 
+export interface LanguageVersion {
+  language: string;
+  slug: string;
+}
+
 export interface VideoGroup {
   youtube_video_id: string;
   title: string;

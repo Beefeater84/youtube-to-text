@@ -1,5 +1,5 @@
 ---
-description: Core product and tech stack constraints for youtube-to-text
+description: 
 alwaysApply: true
 ---
 
@@ -22,12 +22,6 @@ alwaysApply: true
 - Do not put heavy transcript/translation logic in request-response web handlers.
 - Use idempotent jobs with retry/backoff for pipeline stability.
 - Keep Markdown rendering pipeline deterministic and safe.
-
-## Delivery phases
-- v0.1: SEO pages + transcript rendering from storage.
-- v0.2: auth + job creation.
-- v0.3: worker pipeline (fetch, cleanup, structure, EN output, save).
-- v0.4+: translations, token ledger, payments, semantic search.
 
 ## Implementation style
 - Apply YAGNI: avoid features not needed for current phase.

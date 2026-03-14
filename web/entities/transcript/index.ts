@@ -2,6 +2,7 @@ export {
   getTranscriptBySlug,
   getAllTranscriptSlugs,
   fetchTranscriptMarkdown,
+  getTranscriptPageData,
 } from "./api/get-transcript";
 export {
   getLatestVideoGroups,
@@ -12,5 +13,6 @@ export type {
   TranscriptWithChannel,
   Channel,
   VideoGroup,
+  LanguageVersion,
 } from "./model/types";
-export { TranscriptCard } from "./ui";
+export { TranscriptCard, LanguageSwitcher } from "./ui";
