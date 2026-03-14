@@ -41,7 +41,7 @@ export interface VideoGroup {
   thumbnail_url: string | null;
   channel_title: string | null;
   channel_slug: string | null;
-  languages: string[];
+  languages: LanguageVersion[];
   duration_seconds: number | null;
   created_at: string;
 }

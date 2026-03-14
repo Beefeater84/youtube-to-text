@@ -25,10 +25,11 @@ export async function getLatestVideoGroups(
   const groupMap = new Map<string, VideoGroup>();
 
   for (const row of data) {
+    const langVersion = { language: row.language, slug: row.slug };
     const existing = groupMap.get(row.youtube_video_id);
     if (existing) {
-      if (!existing.languages.includes(row.language)) {
-        existing.languages.push(row.language);
+      if (!existing.languages.some((l) => l.language === row.language)) {
+        existing.languages.push(langVersion);
       }
     } else {
       const raw = row.channels;
@@ -43,7 +44,7 @@ export async function getLatestVideoGroups(
         thumbnail_url: row.thumbnail_url,
         channel_title: ch?.title ?? null,
         channel_slug: ch?.slug ?? null,
-        languages: [row.language],
+        languages: [langVersion],
         duration_seconds: row.duration_seconds,
         created_at: row.created_at,
       });

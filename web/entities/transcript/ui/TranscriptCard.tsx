@@ -23,13 +23,14 @@ export function TranscriptCard({ video }: { video: VideoGroup }) {
           </span>
         )}
         <div className="flex gap-1">
-          {video.languages.map((lang) => (
-            <span
-              key={lang}
-              className="inline-block border border-ink/30 px-1.5 py-0.5 font-label text-[0.6rem] uppercase leading-none tracking-wider text-ink-muted"
+          {video.languages.map(({ language, slug }) => (
+            <Link
+              key={language}
+              href={`/transcripts/${slug}`}
+              className="inline-flex h-5 items-center border border-ink/30 px-1.5 font-label text-[0.6rem] uppercase tracking-wider text-ink-muted transition-colors hover:bg-ink hover:text-paper"
             >
-              {lang}
-            </span>
+              {language}
+            </Link>
           ))}
         </div>
       </header>
