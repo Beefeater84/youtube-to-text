@@ -14,6 +14,7 @@ import {
   TableOfContents,
 } from "@/widgets/transcript-article";
 import { AuthCTA } from "@/widgets/auth-cta";
+import { DownloadTranscriptButton } from "@/features/download-transcript";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -155,11 +156,15 @@ export default async function TranscriptPage({ params }: PageProps) {
               )}
             </div>
 
-            {/* Language versions */}
-            <div className="mt-3">
+            {/* Language versions and Download */}
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
               <LanguageSwitcher
                 languages={languages}
                 currentLanguage={transcript.language}
+              />
+              <DownloadTranscriptButton
+                content={raw}
+                filename={`${transcript.channels.title} - ${transcript.title} (${transcript.language}).md`}
               />
             </div>
           </header>
