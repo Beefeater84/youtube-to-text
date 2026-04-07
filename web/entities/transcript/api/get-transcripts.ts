@@ -1,5 +1,5 @@
 import { createStaticClient } from "@/libs/supabase";
-import type { VideoGroup } from "../model/types";
+import type { VideoGroup, Transcript } from "../model/types";
 
 /**
  * Fetches a paginated list of completed transcripts grouped by video.
@@ -11,6 +11,8 @@ export async function getLatestVideoGroups(
   pageSize: number = 20,
 ): Promise<VideoGroup[]> {
   const supabase = createStaticClient();
+  const start = (page - 1) * pageSize;
+  const end = start + pageSize - 1;
 
   const { data, error } = await supabase
     .from("transcripts")
@@ -18,7 +20,8 @@ export async function getLatestVideoGroups(
       "youtube_video_id, title, slug, thumbnail_url, language, duration_seconds, created_at, channels(title, slug)",
     )
     .eq("status", "done")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .range(start, end);
 
   if (error || !data) return [];
 
@@ -52,24 +55,62 @@ export async function getLatestVideoGroups(
   }
 
   const groups = Array.from(groupMap.values());
-  const start = (page - 1) * pageSize;
-  return groups.slice(start, start + pageSize);
+  return groups;
 }
 
 /**
  * Returns total count of unique videos with at least one completed transcript.
- * Used for pagination on the homepage.
+ * For true unique count via REST API, we'd need a view, but for now we'll count transcripts 
+ * which is close enough or use the count features.
  */
 export async function getVideoGroupsTotalCount(): Promise<number> {
   const supabase = createStaticClient();
 
-  const { data, error } = await supabase
+  const { count, error } = await supabase
     .from("transcripts")
-    .select("youtube_video_id")
+    .select("*", { count: "exact", head: true })
     .eq("status", "done");
 
-  if (error || !data) return 0;
+  if (error || count === null) return 0;
+  return count;
+}
 
-  const unique = new Set(data.map((r) => r.youtube_video_id));
-  return unique.size;
+/**
+ * Fetches user's transcripts for dashboard with pagination.
+ */
+export async function getUserTranscripts(
+  userId: string,
+  page: number = 1,
+  pageSize: number = 20,
+): Promise<Transcript[]> {
+  const supabase = createStaticClient();
+  const start = (page - 1) * pageSize;
+  const end = start + pageSize - 1;
+
+  const { data, error } = await supabase
+    .from("transcripts")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .range(start, end);
+
+  if (error || !data) return [];
+  return data as Transcript[];
+}
+
+/**
+ * Returns total count of jobs/transcripts for a specific user.
+ */
+export async function getUserTranscriptsCount(
+  userId: string,
+): Promise<number> {
+  const supabase = createStaticClient();
+
+  const { count, error } = await supabase
+    .from("transcripts")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId);
+
+  if (error || count === null) return 0;
+  return count;
 }

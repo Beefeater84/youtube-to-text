@@ -11,6 +11,8 @@ export async function getChannelVideoGroups(
   pageSize: number = 20,
 ): Promise<VideoGroup[]> {
   const supabase = createStaticClient();
+  const start = (page - 1) * pageSize;
+  const end = start + pageSize - 1;
 
   const { data, error } = await supabase
     .from("transcripts")
@@ -19,7 +21,8 @@ export async function getChannelVideoGroups(
     )
     .eq("status", "done")
     .eq("channel_id", channelId)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .range(start, end);
 
   if (error || !data) return [];
 
@@ -53,27 +56,24 @@ export async function getChannelVideoGroups(
   }
 
   const groups = Array.from(groupMap.values());
-  const start = (page - 1) * pageSize;
-  return groups.slice(start, start + pageSize);
+  return groups;
 }
 
 /**
  * Returns total count of unique videos for a channel with completed transcripts.
- * Used for pagination on the channel page.
+ * Using transcript count as a proxy for pagination count.
  */
 export async function getChannelVideoGroupsCount(
   channelId: string,
 ): Promise<number> {
   const supabase = createStaticClient();
 
-  const { data, error } = await supabase
+  const { count, error } = await supabase
     .from("transcripts")
-    .select("youtube_video_id")
+    .select("*", { count: "exact", head: true })
     .eq("status", "done")
     .eq("channel_id", channelId);
 
-  if (error || !data) return 0;
-
-  const unique = new Set(data.map((r) => r.youtube_video_id));
-  return unique.size;
+  if (error || count === null) return 0;
+  return count;
 }

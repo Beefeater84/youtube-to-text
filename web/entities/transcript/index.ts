@@ -7,6 +7,8 @@ export {
 export {
   getLatestVideoGroups,
   getVideoGroupsTotalCount,
+  getUserTranscripts,
+  getUserTranscriptsCount,
 } from "./api/get-transcripts";
 export type {
   Transcript,
