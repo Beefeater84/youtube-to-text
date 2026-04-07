@@ -1,17 +1,24 @@
-## Финальный вид проекта:
-Превращение видео - в md файлы, подходящие для LLM / Notebook
+# YouTube to Text (MD)
 
-Возможность получить информацию по нужной теме от доверенных авторов:
-- Видео ( наш сервис )
-- Отчеты исследований ( найти )
-- Вебсайта ( сервисы превращения сайта в md )
+### Project Goal
+Transform videos into Markdown files optimal for LLMs and Notebooks.
 
-И на каждом этапе убираем воду:
-- Убираем рекламу
-- Убираем воду
+### Core Features
+Gather information on specific topics from trusted sources:
+- **Videos** (via this service)
+- **Research Reports** (planned)
+- **Websites** (integrating website-to-markdown conversion)
 
-Группируем все по темам и помещаем в одно хранилище.
-В итогде хорошо бы иметь:
-1) Транскрипт без рекламы
-2) Подсветку самого важного или именно краткое содержание
-3) Возможность отправить все это в единое хранилище и использовать для векторного поиска
+### Content Distillation
+At each stage, content is refined by:
+- **Removing Ads**: Stripping out sponsored segments.
+- **Removing "Noisy" Content**: Eliminating filler and off-topic discussion.
+
+### Data Management
+- Group content by topics/themes.
+- Centralize all data into a single repository.
+
+### Desired Outcomes
+1. **Clean Transcripts**: High-quality, ad-free text.
+2. **Key Highlights**: Summaries or highlighted core insights.
+3. **Knowledge Base Ready**: Seamless export to unified storage for vector search functionality.
