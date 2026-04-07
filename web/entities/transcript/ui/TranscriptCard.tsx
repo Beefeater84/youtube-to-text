@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { VideoGroup } from "../model/types";
+import { DownloadTranscriptButton } from "@/features/download-transcript";
 
 /**
  * Displays a single video group as a newspaper-style card.
@@ -22,16 +23,34 @@ export function TranscriptCard({ video }: { video: VideoGroup }) {
             Unknown channel
           </span>
         )}
-        <div className="flex gap-1">
-          {video.languages.map(({ language, slug }) => (
-            <Link
-              key={language}
-              href={`/transcripts/${slug}`}
-              className="inline-flex h-5 items-center border border-ink/30 px-1.5 font-label text-[0.6rem] uppercase tracking-wider text-ink-muted transition-colors hover:bg-ink hover:text-paper"
-            >
-              {language}
-            </Link>
-          ))}
+        <div className="flex gap-3">
+          {video.languages.map((lang) => {
+            const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+            const fullUrl = lang.markdown_url
+              ? lang.markdown_url.startsWith("http")
+                ? lang.markdown_url
+                : `${baseUrl}${lang.markdown_url}`
+              : null;
+
+            return (
+              <div key={lang.language} className="flex items-center gap-1">
+                <Link
+                  href={`/transcripts/${lang.slug}`}
+                  className="inline-flex h-5 items-center border border-ink/30 px-1.5 font-label text-[0.65rem] uppercase tracking-wider text-ink-muted transition-colors hover:bg-ink hover:text-paper"
+                >
+                  {lang.language}
+                </Link>
+                {fullUrl && (
+                  <DownloadTranscriptButton
+                    url={fullUrl}
+                    filename={`${video.channel_title ?? "Article"} - ${video.title} (${lang.language}).md`}
+                    variant="icon"
+                    language={lang.language}
+                  />
+                )}
+              </div>
+            );
+          })}
         </div>
       </header>
       <h3 className="font-headline text-[1rem] font-semibold leading-snug -tracking-[0.01em]">

@@ -32,6 +32,7 @@ export interface TranscriptWithChannel extends Transcript {
 export interface LanguageVersion {
   language: string;
   slug: string;
+  markdown_url?: string | null;
 }
 
 export interface VideoGroup {

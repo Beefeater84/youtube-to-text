@@ -17,7 +17,7 @@ export async function getChannelVideoGroups(
   const { data, error } = await supabase
     .from("transcripts")
     .select(
-      "youtube_video_id, title, slug, thumbnail_url, language, duration_seconds, created_at, channels(title, slug)",
+      "youtube_video_id, title, slug, thumbnail_url, language, duration_seconds, created_at, markdown_url, channels(title, slug)",
     )
     .eq("status", "done")
     .eq("channel_id", channelId)
@@ -29,7 +29,11 @@ export async function getChannelVideoGroups(
   const groupMap = new Map<string, VideoGroup>();
 
   for (const row of data) {
-    const langVersion = { language: row.language, slug: row.slug };
+    const langVersion = {
+      language: row.language,
+      slug: row.slug,
+      markdown_url: row.markdown_url,
+    };
     const existing = groupMap.get(row.youtube_video_id);
     if (existing) {
       if (!existing.languages.some((l) => l.language === row.language)) {

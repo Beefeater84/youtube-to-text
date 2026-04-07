@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Transcript } from "@/entities/transcript";
 import { StatusBadge } from "./StatusBadge";
+import { DownloadTranscriptButton } from "@/features/download-transcript";
 
 interface DashboardJobListProps {
   transcripts: Transcript[];
@@ -50,8 +51,18 @@ export function DashboardJobList({ transcripts }: DashboardJobListProps) {
                 : transcript.title}
             </h3>
 
-            <p className="mt-1 font-label text-[0.65rem] uppercase tracking-[0.08em] text-ink-ghost">
-              {transcript.youtube_video_id} · {transcript.language}
+            <p className="mt-1 flex items-center gap-1.5 font-label text-[0.65rem] uppercase tracking-[0.08em] text-ink-ghost">
+              <span>{transcript.youtube_video_id} · {transcript.language}</span>
+              {isDone && transcript.markdown_url && (
+                <DownloadTranscriptButton
+                  url={transcript.markdown_url.startsWith("http")
+                    ? transcript.markdown_url
+                    : `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}${transcript.markdown_url}`}
+                  filename={`Job - ${transcript.title} (${transcript.language}).md`}
+                  variant="icon"
+                  language={transcript.language}
+                />
+              )}
             </p>
           </>
         );
