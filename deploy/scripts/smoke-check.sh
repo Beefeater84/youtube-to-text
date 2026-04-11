@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Load environment variables if .env exists
+if [ -f .env ]; then
+  # shellcheck disable=SC1091
+  export $(grep -v '^#' .env | xargs)
+fi
+
 BASE_URL="${SMOKE_BASE_URL:-http://127.0.0.1}"
-TARGETS="${SMOKE_TARGETS:-/}"
+TARGETS="${SMOKE_TARGETS:-/ /health}"
 TIMEOUT_SECONDS="${SMOKE_TIMEOUT_SECONDS:-10}"
 
 echo "Running smoke checks against ${BASE_URL}"

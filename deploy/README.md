@@ -4,18 +4,17 @@
 
 - `reverse-proxy`: Caddy entrypoint with TLS and reverse proxy.
 - `web`: Next.js production app.
-- `worker`: BullMQ worker process.
-- `redis`: Queue backend.
+- `worker`: Python worker process (polls Postgres for jobs).
 
-Application source and npm project are located in `src/`.
+Application source is located in `web/` (Next.js) and `worker/` (Python).
 
 ## One-time server setup
 
 1. Install Docker Engine and Docker Compose plugin.
 2. Clone the repository on VPS.
 3. Copy env template:
-   - `cp deploy/.env.example deploy/.env`
-4. Fill secrets in `deploy/.env`.
+   - `cp deploy/.env.example .env`
+4. Fill secrets in `.env`.
 
 ## Required GitHub repository secrets
 
@@ -24,7 +23,7 @@ Application source and npm project are located in `src/`.
 - `VPS_USER`
 - `VPS_SSH_KEY`
 - `VPS_DEPLOY_PATH` (absolute path to repository on VPS)
-- `DEPLOY_ENV_FILE` (optional multiline content for `deploy/.env`)
+- `DEPLOY_ENV_FILE` (optional multiline content for `.env`)
 
 ## Manual deployment
 
@@ -43,7 +42,7 @@ bash deploy/scripts/smoke-check.sh
 bash deploy/scripts/rollback.sh <web_tag> <worker_tag>
 ```
 
-This updates `deploy/.env`, recreates containers, and runs smoke checks.
+This updates `.env`, recreates containers, and runs smoke checks.
 
 ## Failed jobs alert
 
@@ -55,11 +54,11 @@ bash deploy/scripts/failed-jobs-alert.sh
 
 Script behavior:
 
-- Reads BullMQ failed set (`bull:<QUEUE_NAME>:failed`) from Redis.
+- Queries Supabase `transcripts` table for jobs with `status='failed'`.
 - Exits with code `2` when threshold is exceeded.
 - Sends Slack message when `SLACK_WEBHOOK_URL` is set.
 
 ## Sentry
 
-- Use `SENTRY_DSN_WEB` and `SENTRY_DSN_WORKER` in `deploy/.env`.
+- Use `SENTRY_DSN_WEB` and `SENTRY_DSN_WORKER` in `.env`.
 - App code should initialize Sentry separately in web and worker runtimes.
