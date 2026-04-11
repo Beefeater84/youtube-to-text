@@ -3,11 +3,17 @@ set -euo pipefail
 
 # Load environment variables if .env exists
 if [ -f .env ]; then
-  set -a
-  # shellcheck disable=SC1091
-  source .env
-  set +a
+  # Read .env file line by line, ignore comments and empty lines, and export
+  while IFS= read -r line || [ -n "$line" ]; do
+    [[ "$line" =~ ^#.*$ ]] && continue
+    [[ -z "$line" ]] && continue
+    export "$line"
+  done < .env
 fi
+
+# Give containers a few seconds to fully initialize
+echo "Waiting for containers to bind ports..."
+sleep 5
 
 BASE_URL="${SMOKE_BASE_URL:-http://127.0.0.1}"
 TARGETS="${SMOKE_TARGETS:-/ /health}"
