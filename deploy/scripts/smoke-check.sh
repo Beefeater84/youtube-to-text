@@ -3,12 +3,10 @@ set -euo pipefail
 
 # Load environment variables if .env exists
 if [ -f .env ]; then
-  # Read .env file line by line, ignore comments and empty lines, and export
-  while IFS= read -r line || [ -n "$line" ]; do
-    [[ "$line" =~ ^#.*$ ]] && continue
-    [[ -z "$line" ]] && continue
-    export "$line"
-  done < .env
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
 fi
 
 # Give containers a few seconds to fully initialize

@@ -3,12 +3,10 @@ set -euo pipefail
 
 # Load environment variables if .env exists (relative to CWD which is expected to be VPS_DEPLOY_PATH)
 if [ -f .env ]; then
-  # Read .env file line by line, ignore comments and empty lines, and export
-  while IFS= read -r line || [ -n "$line" ]; do
-    [[ "$line" =~ ^#.*$ ]] && continue
-    [[ -z "$line" ]] && continue
-    export "$line"
-  done < .env
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
 fi
 
 : "${NEXT_PUBLIC_SUPABASE_URL:?NEXT_PUBLIC_SUPABASE_URL is required}"
