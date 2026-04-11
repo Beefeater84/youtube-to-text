@@ -1,4 +1,4 @@
-{$APP_DOMAIN} {
+{$APP_DOMAIN}, http://localhost, http://127.0.0.1 {
   encode gzip
 
   header {
