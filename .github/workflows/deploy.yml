@@ -56,6 +56,9 @@ jobs:
           tags: |
             ${{ steps.vars.outputs.image }}:${{ github.sha }}
             ${{ steps.vars.outputs.image }}:latest
+          build-args: |
+            NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
   deploy:
     runs-on: ubuntu-latest

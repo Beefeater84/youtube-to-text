@@ -8,7 +8,7 @@ fi
 
 WEB_TAG="$1"
 WORKER_TAG="$2"
-ENV_FILE="${ENV_FILE_PATH:-deploy/.env}"
+ENV_FILE="${ENV_FILE_PATH:-.env}"
 COMPOSE_FILE="${COMPOSE_FILE_PATH:-deploy/docker-compose.prod.yml}"
 
 if [[ ! -f "${ENV_FILE}" ]]; then

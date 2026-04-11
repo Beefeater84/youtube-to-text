@@ -252,3 +252,4 @@ flowchart LR
 
 ### Бэклог: Worker pipeline (после v0.3)
 1. ~~**Замена библиотеки получения субтитров**~~ — решено: worker переписан на Python + yt-dlp (feat/python-worker-yt-dlp).
+
