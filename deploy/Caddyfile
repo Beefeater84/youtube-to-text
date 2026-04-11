@@ -1,4 +1,4 @@
-{$APP_DOMAIN}, http://localhost, http://127.0.0.1 {
+{$APP_DOMAIN} {
   encode gzip
 
   header {
@@ -8,5 +8,10 @@
     Referrer-Policy "strict-origin-when-cross-origin"
   }
 
+  reverse_proxy web:3000
+}
+
+# Separate block for local health checks/smoke tests
+http://localhost, http://127.0.0.1 {
   reverse_proxy web:3000
 }
