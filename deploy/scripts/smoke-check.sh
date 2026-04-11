@@ -3,8 +3,10 @@ set -euo pipefail
 
 # Load environment variables if .env exists
 if [ -f .env ]; then
+  set -a
   # shellcheck disable=SC1091
-  export $(grep -v '^#' .env | xargs)
+  source .env
+  set +a
 fi
 
 BASE_URL="${SMOKE_BASE_URL:-http://127.0.0.1}"
