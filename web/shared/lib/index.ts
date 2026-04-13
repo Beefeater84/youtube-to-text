@@ -10,3 +10,4 @@ export type {
   TranscriptFrontmatter,
   ParsedTranscript,
 } from "./markdown";
+export { getBaseUrl } from "./url";

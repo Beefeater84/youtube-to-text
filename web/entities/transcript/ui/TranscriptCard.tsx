@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { VideoGroup } from "../model/types";
 import { DownloadTranscriptButton } from "@/features/download-transcript";
+import { getBaseUrl } from "@/shared/lib";
 
 /**
  * Displays a single video group as a newspaper-style card.
@@ -25,7 +26,7 @@ export function TranscriptCard({ video }: { video: VideoGroup }) {
         )}
         <div className="flex gap-3">
           {video.languages.map((lang) => {
-            const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+            const baseUrl = getBaseUrl();
             const fullUrl = lang.markdown_url
               ? lang.markdown_url.startsWith("http")
                 ? lang.markdown_url
