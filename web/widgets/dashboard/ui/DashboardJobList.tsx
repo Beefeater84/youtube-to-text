@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Transcript } from "@/entities/transcript";
 import { StatusBadge } from "./StatusBadge";
 import { DownloadTranscriptButton } from "@/features/download-transcript";
+import { getBaseUrl } from "@/shared/lib";
 
 interface DashboardJobListProps {
   transcripts: Transcript[];
@@ -57,7 +58,7 @@ export function DashboardJobList({ transcripts }: DashboardJobListProps) {
                 <DownloadTranscriptButton
                   url={transcript.markdown_url.startsWith("http")
                     ? transcript.markdown_url
-                    : `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}${transcript.markdown_url}`}
+                    : `${getBaseUrl()}${transcript.markdown_url}`}
                   filename={`Job - ${transcript.title} (${transcript.language}).md`}
                   variant="icon"
                   language={transcript.language}

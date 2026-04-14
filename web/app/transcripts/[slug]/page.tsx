@@ -8,7 +8,7 @@ import {
   VideoPlayer,
   VideoPlayerProvider,
 } from "@/features/video-player";
-import { formatTime, parseTranscript } from "@/shared/lib";
+import { getBaseUrl, formatTime, parseTranscript } from "@/shared/lib";
 import {
   MarkdownContent,
   TableOfContents,
@@ -69,8 +69,7 @@ export default async function TranscriptPage({ params }: PageProps) {
   const markdownUrl = transcript.markdown_url;
   if (!markdownUrl) notFound();
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const baseUrl = getBaseUrl();
   const fullUrl = markdownUrl.startsWith("http")
     ? markdownUrl
     : `${baseUrl}${markdownUrl}`;
