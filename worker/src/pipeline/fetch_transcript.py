@@ -27,8 +27,8 @@ def fetch_transcript(video_id: str, target_lang: str = "en") -> FetchResult:
 
     ydl_opts: dict = {
         "skip_download": True,
-        "quiet": True,
-        "no_warnings": True,
+        "quiet": False,  # Changed from True to allow seeing diagnostic info
+        "no_warnings": False,  # Changed from True to see cookie warnings
     }
 
     # Handle cookies to bypass bot detection in production
@@ -42,17 +42,48 @@ def fetch_transcript(video_id: str, target_lang: str = "en") -> FetchResult:
             with open(temp_cookies_path, "w", encoding="utf-8") as f:
                 f.write(cookie_content)
             cookie_file = temp_cookies_path
-            logger.info("Using YouTube cookies from YOUTUBE_COOKIES_CONTENT")
+            logger.info(
+                "Using YouTube cookies from YOUTUBE_COOKIES_CONTENT (length: %d chars, %d lines)",
+                len(cookie_content),
+                len(cookie_content.splitlines()),
+            )
         except Exception as e:
             logger.error("Failed to write YouTube cookies to temp file: %s", e)
 
-    if cookie_file and os.path.exists(cookie_file):
-        ydl_opts["cookiefile"] = cookie_file
-        if not cookie_content:
-            logger.info("Using YouTube cookies from file: %s", cookie_file)
+    if cookie_file:
+        if os.path.exists(cookie_file):
+            ydl_opts["cookiefile"] = cookie_file
+            file_size = os.path.getsize(cookie_file)
+            logger.info("YouTube cookies applied from file: %s (size: %d bytes)", cookie_file, file_size)
+            
+            # Diagnostic: check the first line of the cookie file
+            try:
+                with open(cookie_file, "r", encoding="utf-8") as f:
+                    first_line = f.readline().strip()
+                    logger.debug("Cookie file first line: %s", first_line)
+                    if not first_line.startswith("# Netscape") and not first_line.startswith(".youtube.com"):
+                        logger.warning("Cookie file might have invalid format: %s", first_line)
+            except Exception as e:
+                logger.error("Could not read cookie file for diagnostic: %s", e)
+        else:
+            logger.error("YOUTUBE_COOKIES_FILE specified but not found: %s", cookie_file)
+    else:
+        logger.warning("No YouTube cookies provided (YOUTUBE_COOKIES_FILE or YOUTUBE_COOKIES_CONTENT)")
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=False)
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+    except yt_dlp.utils.DownloadError as e:
+        if "Sign in to confirm you’re not a bot" in str(e):
+            logger.error("YouTube blocked the request: Bot detection triggered. Cookies might be invalid or expired.")
+            if cookie_file:
+                logger.error("Cookies were provided via %s, but YouTube rejected them.", cookie_file)
+            else:
+                logger.error("No cookies were provided. YouTube requires authentication for this video/server.")
+        raise RuntimeError(f"Failed to fetch video metadata: {e}") from e
+    except Exception as e:
+        logger.error("Unexpected error during yt-dlp extract_info: %s", e)
+        raise
 
     if info is None:
         raise RuntimeError(f"yt-dlp returned no info for {video_id}")
