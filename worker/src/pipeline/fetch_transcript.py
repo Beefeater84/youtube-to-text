@@ -31,6 +31,26 @@ def fetch_transcript(video_id: str, target_lang: str = "en") -> FetchResult:
         "no_warnings": True,
     }
 
+    # Handle cookies to bypass bot detection in production
+    cookie_file = os.environ.get("YOUTUBE_COOKIES_FILE")
+    cookie_content = os.environ.get("YOUTUBE_COOKIES_CONTENT")
+
+    if cookie_content and not cookie_file:
+        # If content is provided as a string, write it to a temp file for yt-dlp
+        temp_cookies_path = os.path.join(_TMP_DIR, "cookies.txt")
+        try:
+            with open(temp_cookies_path, "w", encoding="utf-8") as f:
+                f.write(cookie_content)
+            cookie_file = temp_cookies_path
+            logger.info("Using YouTube cookies from YOUTUBE_COOKIES_CONTENT")
+        except Exception as e:
+            logger.error("Failed to write YouTube cookies to temp file: %s", e)
+
+    if cookie_file and os.path.exists(cookie_file):
+        ydl_opts["cookiefile"] = cookie_file
+        if not cookie_content:
+            logger.info("Using YouTube cookies from file: %s", cookie_file)
+
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
 

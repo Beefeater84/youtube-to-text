@@ -14,3 +14,9 @@ dist/
 build/
 .venv/
 worker/*.egg-info/
+# Secrets and credentials
+.env*
+!.env.example
+client_secret_*.json
+*.pem
+*.key
