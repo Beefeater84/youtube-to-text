@@ -13,14 +13,25 @@ export async function GET(request: Request) {
   const next = requestUrl.searchParams.get("next") ?? "/dashboard";
   const baseUrl = getBaseUrl();
 
+  console.log("[AUTH CALLBACK] Incoming Request URL:", request.url);
+  console.log("[AUTH CALLBACK] Computed Base URL:", baseUrl);
+  console.log("[AUTH CALLBACK] Next path:", next);
+
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      return NextResponse.redirect(`${baseUrl}${next}`);
+      const finalRedirect = `${baseUrl}${next}`;
+      console.log("[AUTH CALLBACK] Success! Redirecting to:", finalRedirect);
+      return NextResponse.redirect(finalRedirect);
     }
+    console.error("[AUTH CALLBACK] Auth error session exchange:", error);
+  } else {
+    console.warn("[AUTH CALLBACK] No code found in searchParams");
   }
 
-  return NextResponse.redirect(`${baseUrl}/login?error=auth`);
+  const errorRedirect = `${baseUrl}/login?error=auth`;
+  console.log("[AUTH CALLBACK] Redirecting to error:", errorRedirect);
+  return NextResponse.redirect(errorRedirect);
 }

@@ -11,5 +11,11 @@ export function getBaseUrl() {
     return process.env.NEXT_PUBLIC_SITE_URL;
   }
 
+  if (process.env.NODE_ENV === "production") {
+    console.warn(
+      "[getBaseUrl] NEXT_PUBLIC_SITE_URL is missing in production! Falling back to localhost."
+    );
+  }
+
   return "http://localhost:3000";
 }
