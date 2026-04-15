@@ -37,11 +37,13 @@ export async function middleware(request: NextRequest) {
 
   if (isProtected && !user) {
     const loginUrl = new URL("/login", request.url);
+    console.log(`[MIDDLEWARE] Protected path access without user. Origin: ${request.url}. Redirecting to ${loginUrl.toString()}`);
     return NextResponse.redirect(loginUrl);
   }
 
   if (request.nextUrl.pathname === "/login" && user) {
     const dashboardUrl = new URL("/dashboard", request.url);
+    console.log(`[MIDDLEWARE] Login page access with user. Origin: ${request.url}. Redirecting to ${dashboardUrl.toString()}`);
     return NextResponse.redirect(dashboardUrl);
   }
 

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/libs/supabase/server";
-
 import { getBaseUrl } from "@/shared/lib";
 
 /**
@@ -8,14 +7,16 @@ import { getBaseUrl } from "@/shared/lib";
  * Exchanges the authorization code for a session, then redirects to /dashboard.
  */
 export async function GET(request: Request) {
+  const now = new Date().toISOString();
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
   const next = requestUrl.searchParams.get("next") ?? "/dashboard";
   const baseUrl = getBaseUrl();
 
-  console.log("[AUTH CALLBACK] Incoming Request URL:", request.url);
-  console.log("[AUTH CALLBACK] Computed Base URL:", baseUrl);
-  console.log("[AUTH CALLBACK] Next path:", next);
+  console.log(`\n!!! [${now}] AUTH CALLBACK START !!!`);
+  console.log(`!!! [${now}] Incoming Request URL: ${request.url}`);
+  console.log(`!!! [${now}] Computed Base URL: ${baseUrl}`);
+  console.log(`!!! [${now}] Next path: ${next}`);
 
   if (code) {
     const supabase = await createClient();
@@ -23,15 +24,15 @@ export async function GET(request: Request) {
 
     if (!error) {
       const finalRedirect = `${baseUrl}${next}`;
-      console.log("[AUTH CALLBACK] Success! Redirecting to:", finalRedirect);
+      console.log(`!!! [${now}] SUCCESS! Redirecting to: ${finalRedirect}`);
       return NextResponse.redirect(finalRedirect);
     }
-    console.error("[AUTH CALLBACK] Auth error session exchange:", error);
+    console.error(`!!! [${now}] AUTH ERROR session exchange:`, error);
   } else {
-    console.warn("[AUTH CALLBACK] No code found in searchParams");
+    console.warn(`!!! [${now}] NO CODE found in searchParams`);
   }
 
   const errorRedirect = `${baseUrl}/login?error=auth`;
-  console.log("[AUTH CALLBACK] Redirecting to error:", errorRedirect);
+  console.log(`!!! [${now}] REDIRECTING TO ERROR: ${errorRedirect}`);
   return NextResponse.redirect(errorRedirect);
 }
