@@ -28,8 +28,8 @@ Application source is located in `web/` (Next.js) and `worker/` (Python).
 ## Manual deployment
 
 ```bash
-docker compose -f deploy/docker-compose.prod.yml pull
-docker compose -f deploy/docker-compose.prod.yml up -d --remove-orphans
+docker compose --env-file ../.env -f deploy/docker-compose.prod.yml pull
+docker compose --env-file ../.env -f deploy/docker-compose.prod.yml up -d --remove-orphans
 bash deploy/scripts/smoke-check.sh
 ```
 
