@@ -27,6 +27,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
+      NEXT_PUBLIC_SITE_URL: https://${APP_DOMAIN:-yt-reader.com}
     expose:
       - "3000"
     healthcheck:
