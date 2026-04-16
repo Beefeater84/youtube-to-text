@@ -32,6 +32,7 @@ export default async function Home({ searchParams }: HomeProps) {
     <section className="mx-auto max-w-[960px] px-4 pb-8 pt-4 md:px-6">
       <div className="grid gap-8 py-6 md:grid-cols-[minmax(0,2.1fr)_minmax(260px,1fr)]">
         {/* Main content */}
+        <h1>HELLO!</h1>
         <section aria-label="Latest transcripts" className="space-y-4">
           <h2 className="font-headline text-[1.1rem] uppercase tracking-[0.12em]">
             Latest News
