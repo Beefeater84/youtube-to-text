@@ -1,5 +1,6 @@
 import { createStaticClient } from "@/libs/supabase";
 import type { VideoGroup, Transcript } from "../model/types";
+import { groupTranscriptsToVideos } from "../lib/grouping";
 
 /**
  * Fetches a paginated list of completed transcripts grouped by video.
@@ -25,41 +26,7 @@ export async function getLatestVideoGroups(
 
   if (error || !data) return [];
 
-  const groupMap = new Map<string, VideoGroup>();
-
-  for (const row of data) {
-    const langVersion = {
-      language: row.language,
-      slug: row.slug,
-      markdown_url: row.markdown_url,
-    };
-    const existing = groupMap.get(row.youtube_video_id);
-    if (existing) {
-      if (!existing.languages.some((l) => l.language === row.language)) {
-        existing.languages.push(langVersion);
-      }
-    } else {
-      const raw = row.channels;
-      const ch = (Array.isArray(raw) ? raw[0] : raw) as
-        | { title: string; slug: string }
-        | null
-        | undefined;
-      groupMap.set(row.youtube_video_id, {
-        youtube_video_id: row.youtube_video_id,
-        title: row.title,
-        slug: row.slug,
-        thumbnail_url: row.thumbnail_url,
-        channel_title: ch?.title ?? null,
-        channel_slug: ch?.slug ?? null,
-        languages: [langVersion],
-        duration_seconds: row.duration_seconds,
-        created_at: row.created_at,
-      });
-    }
-  }
-
-  const groups = Array.from(groupMap.values());
-  return groups;
+  return groupTranscriptsToVideos(data);
 }
 
 /**

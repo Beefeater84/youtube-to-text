@@ -37,4 +37,7 @@ Expected behavior:
 
 - List of videos that were created by the user
 - If a video is available in multiple languages, only one video entry is shown with an indication of which languages exist in the database.
+- **English-first display:** The list always prioritizes the English version for the title and link if an English transcript exists, regardless of the original video language.
+- Channel names are displayed in English when available (translated by the worker during processing).
+- Language badges are sorted so that 'EN' is always shown first.
 

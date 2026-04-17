@@ -50,8 +50,10 @@ Expected behavior:
 
 Expected behavior:
 
-- Prefer the video's original-language subtitles (manual or auto-generated from speech) over YouTube's auto-translated English — they are higher quality and less likely to be rate-limited.
+- Prefer the video's original-language subtitles (manual or auto-generated from speech) over YouTube's auto-translated English.
 - Clean and structure the original-language transcript with LLM.
 - Publish the original-language transcript as a sibling record.
+- **Translate the channel name** to English using LLM if it's not already in English.
+- Update the `channels` record with the English title and slug.
 - Translate the cleaned transcript into English with LLM.
-- Then follow the standard pipeline: saving to Markdown, publishing on the website.
+- Then follow the standard pipeline: saving to Markdown, publishing on the website using English metadata (title and channel title).

@@ -90,7 +90,12 @@ def _run_en_pipeline(job: TranscriptJob) -> PipelineResult:
         logger.info("step 4/5: translating %s → en", source_lang)
         en_sections = translate_sections(source_sections, source_lang, "en")
         en_title = translate_title(meta.title, source_lang, "en")
+        en_channel_name = translate_title(meta.channel_name, source_lang, "en")
         en_slug = slugify(en_title)
+        
+        # Update channel title to English
+        channel_id = find_or_create_channel(en_channel_name, meta.channel_id)
+        
         enrich_transcript(
             job.id,
             title=en_title,
@@ -102,12 +107,13 @@ def _run_en_pipeline(job: TranscriptJob) -> PipelineResult:
     else:
         en_sections = source_sections
         en_title = meta.title
+        en_channel_name = meta.channel_name
 
     logger.info("step 5/5: generating markdown for en (%d sections)", len(en_sections))
     md = generate_markdown(
         video_id=job.youtube_video_id,
         title=en_title,
-        channel_name=meta.channel_name,
+        channel_name=en_channel_name,
         duration=duration,
         language="en",
         sections=en_sections,

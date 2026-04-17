@@ -124,8 +124,20 @@ def find_or_create_channel(channel_name: str, youtube_channel_id: str) -> str:
     sb = get_supabase()
     slug = slugify(channel_name)
 
-    result = sb.table("channels").select("id").eq("slug", slug).execute()
+    # Search by youtube_id first (more reliable than slug)
+    result = sb.table("channels").select("id").eq("youtube_id", youtube_channel_id).execute()
 
+    if result.data and len(result.data) > 0:
+        channel_id = result.data[0]["id"]
+        # Update title and slug to the latest (likely English) version
+        sb.table("channels").update({
+            "title": channel_name,
+            "slug": slug,
+        }).eq("id", channel_id).execute()
+        return channel_id
+
+    # Fallback to search by slug if youtube_id didn't match (unlikely but safe)
+    result = sb.table("channels").select("id").eq("slug", slug).execute()
     if result.data and len(result.data) > 0:
         return result.data[0]["id"]
 

@@ -18,7 +18,9 @@
 3. **Cleanup:** Errors in the transcript are removed (most likely using AI).
 4. **Structure:** Text is split into blocks and headings are added.
 5. **Language:** Text is always translated to English. User has the option to translate to any other language.
-6. **Timestamps:** Store the start timestamp of each section so the user can jump to that point in the original video and watch it.
+6. **English-First Display:** In all video lists (home, dashboard, channels), the English version of the title and slug is prioritized if it exists. All available languages are shown as badges, with 'EN' sorted to the front.
+7. **Channel Names:** Channel names are translated to English by the worker if the source video is in a different language. The `channels` database table stores the English title and slug.
+8. **Timestamps:** Store the start timestamp of each section so the user can jump to that point in the original video and watch it.
 
 ---
 
