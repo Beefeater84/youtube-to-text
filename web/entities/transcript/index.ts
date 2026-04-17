@@ -18,3 +18,4 @@ export type {
   LanguageVersion,
 } from "./model/types";
 export { TranscriptCard, LanguageSwitcher } from "./ui";
+export { groupTranscriptsToVideos } from "./lib/grouping";
