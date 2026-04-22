@@ -29,6 +29,8 @@ def fetch_transcript(video_id: str, target_lang: str = "en") -> FetchResult:
         "skip_download": True,
         "quiet": False,  # Changed from True to allow seeing diagnostic info
         "no_warnings": False,  # Changed from True to see cookie warnings
+        "js_runtimes": {"node": {}, "deno": {}},
+        "remote_components": ["ejs:github"],
     }
 
     # Handle cookies to bypass bot detection in production
