@@ -1,10 +1,9 @@
 name: Deploy to VPS
 
 on:
-  # Disabled until infrastructure is ready. Re-enable by uncommenting triggers below.
-  # push:
-  #   branches:
-  #     - main
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:

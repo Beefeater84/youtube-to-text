@@ -58,7 +58,7 @@ services:
       YOUTUBE_COOKIES_CONTENT: "${YOUTUBE_COOKIES_CONTENT}"
       YOUTUBE_COOKIES_FILE: "/app/youtube_cookies.txt"
     volumes:
-      - ../youtube_cookies.txt:/app/youtube_cookies.txt:ro
+      - ../youtube_cookies.txt:/app/youtube_cookies.txt
     command: sh -c "${WORKER_COMMAND:-python -m src.main}"
     networks:
       - app-net

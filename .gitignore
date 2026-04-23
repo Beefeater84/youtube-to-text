@@ -20,3 +20,4 @@ worker/*.egg-info/
 client_secret_*.json
 *.pem
 *.key
+youtube_cookies.txt
