@@ -64,6 +64,9 @@ const allUrls = [...new Set([
   ...staticPages.map(p => BASE_URL + p),
 ])];
 
+// Protected routes: unauthenticated access must redirect to /login
+const protectedPaths = ['/dashboard'];
+
 // Normalize sitemap URLs (they should already be absolute)
 const urlsToTest = allUrls.map(u => {
   try {
@@ -89,6 +92,25 @@ for (const url of urlsToTest) {
     const pass = statusOk && !errorFound;
     results.push({ url, status: res.status, pass, reason: errorFound ? `body contains "${errorFound}"` : (!statusOk ? `status ${res.status}` : null) });
     console.log(`${pass ? 'PASS' : 'FAIL'} [${res.status}] ${url}${errorFound ? ` — ${errorFound}` : ''}`);
+  } catch (err) {
+    results.push({ url, status: null, pass: false, reason: err.message });
+    console.log(`FAIL [ERR] ${url} — ${err.message}`);
+  }
+}
+
+// Step 5b: verify protected routes redirect unauthenticated users to /login
+console.log('\n=== Step 5b: Checking auth protection on protected routes ===');
+for (const path of protectedPaths) {
+  const url = BASE_URL + path;
+  try {
+    // redirect: 'follow' is the default; check that the final URL is /login
+    const res = await fetch(url);
+    const finalUrl = res.url;
+    const expectedPath = '/login';
+    const redirectedToLogin = new URL(finalUrl).pathname === expectedPath;
+    const pass = redirectedToLogin;
+    results.push({ url, status: res.status, pass, reason: pass ? null : `expected redirect to ${expectedPath}, got ${new URL(finalUrl).pathname}` });
+    console.log(`${pass ? 'PASS' : 'FAIL'} [protected] ${url} → ${new URL(finalUrl).pathname}`);
   } catch (err) {
     results.push({ url, status: null, pass: false, reason: err.message });
     console.log(`FAIL [ERR] ${url} — ${err.message}`);
