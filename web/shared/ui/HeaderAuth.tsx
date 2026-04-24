@@ -1,18 +1,42 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { createClient } from "@/libs/supabase/client";
 import { UserMenu } from "@/features/auth";
 
-interface HeaderAuthProps {
-  user: { displayName: string | null; avatarUrl: string | null } | null;
-}
+type AuthState =
+  | { status: "loading" }
+  | { status: "anonymous" }
+  | { status: "authenticated"; displayName: string | null; avatarUrl: string | null };
 
-/**
- * Client component that renders Sign In link or UserMenu in the header.
- * Receives serialized user data from the server-side Header component.
- */
-export function HeaderAuth({ user }: HeaderAuthProps) {
-  if (!user) {
+export function HeaderAuth() {
+  const [auth, setAuth] = useState<AuthState>({ status: "loading" });
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) {
+        setAuth({ status: "anonymous" });
+        return;
+      }
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("display_name, avatar_url")
+        .eq("id", user.id)
+        .single();
+      setAuth({
+        status: "authenticated",
+        displayName: profile?.display_name ?? null,
+        avatarUrl: profile?.avatar_url ?? null,
+      });
+    });
+  }, []);
+
+  if (auth.status === "loading") return <span className="w-16" />;
+
+  if (auth.status === "anonymous") {
     return (
       <Link
         href="/login"
@@ -24,6 +48,6 @@ export function HeaderAuth({ user }: HeaderAuthProps) {
   }
 
   return (
-    <UserMenu displayName={user.displayName} avatarUrl={user.avatarUrl} />
+    <UserMenu displayName={auth.displayName} avatarUrl={auth.avatarUrl} />
   );
 }
