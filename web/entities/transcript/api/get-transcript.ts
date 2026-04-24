@@ -76,15 +76,17 @@ export const getTranscriptPageDataByChannelAndSlug = cache(
 
     const { data, error } = await supabase
       .from("transcripts")
-      .select("*, channels!inner(*)")
+      .select("*, channels(*)")
       .eq("slug", transcriptSlug)
-      .eq("channels.slug", channelSlug)
       .eq("status", "done")
       .single();
 
     if (error || !data) return { transcript: null, languages: [] };
 
     const transcript = data as TranscriptWithChannel;
+
+    // Verify the transcript belongs to the expected channel (SEO isolation)
+    if (transcript.channels?.slug !== channelSlug) return { transcript: null, languages: [] };
 
     const { data: siblings } = await supabase
       .from("transcripts")

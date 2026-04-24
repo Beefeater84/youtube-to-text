@@ -1,17 +1,20 @@
-import { createClient } from "@/libs/supabase/server";
+"use client";
+
+import { useEffect, useState } from "react";
+import { createClient } from "@/libs/supabase/client";
 import { AuthCTAContent } from "./AuthCTAContent";
 
-/**
- * Server component that checks auth state before rendering the CTA.
- * Only renders the CTA for non-authenticated users on transcript pages.
- */
-export async function AuthCTA() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export function AuthCTA() {
+  const [show, setShow] = useState(false);
 
-  if (user) return null;
+  useEffect(() => {
+    createClient()
+      .auth.getUser()
+      .then(({ data }) => {
+        if (!data.user) setShow(true);
+      });
+  }, []);
 
+  if (!show) return null;
   return <AuthCTAContent />;
 }
