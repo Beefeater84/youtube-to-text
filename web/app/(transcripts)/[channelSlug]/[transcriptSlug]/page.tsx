@@ -1,7 +1,7 @@
 import {
   fetchTranscriptMarkdown,
-  getAllTranscriptSlugs,
-  getTranscriptPageData,
+  getAllTranscriptChannelSlugs,
+  getTranscriptPageDataByChannelAndSlug,
   LanguageSwitcher,
 } from "@/entities/transcript";
 import {
@@ -20,21 +20,23 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 interface PageProps {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ channelSlug: string; transcriptSlug: string }>;
 }
 
 export const revalidate = 86400; // 24h ISR
 
 export async function generateStaticParams() {
-  const slugs = await getAllTranscriptSlugs();
-  return slugs.map((slug) => ({ slug }));
+  return getAllTranscriptChannelSlugs();
 }
 
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  const { slug } = await params;
-  const { transcript, languages } = await getTranscriptPageData(slug);
+  const { channelSlug, transcriptSlug } = await params;
+  const { transcript, languages } = await getTranscriptPageDataByChannelAndSlug(
+    channelSlug,
+    transcriptSlug,
+  );
   if (!transcript) return { title: "Transcript Not Found" };
 
   const description =
@@ -42,7 +44,7 @@ export async function generateMetadata({
     `Read the full transcript of "${transcript.title}" by ${transcript.channels.title}.`;
 
   const languageAlternates = Object.fromEntries(
-    languages.map((l) => [l.language, `/transcripts/${l.slug}`]),
+    languages.map((l) => [l.language, `/${channelSlug}/${l.slug}`]),
   );
 
   return {
@@ -55,15 +57,18 @@ export async function generateMetadata({
       images: transcript.thumbnail_url ? [transcript.thumbnail_url] : [],
     },
     alternates: {
-      canonical: `/transcripts/${transcript.slug}`,
+      canonical: `/${channelSlug}/${transcriptSlug}`,
       languages: languageAlternates,
     },
   };
 }
 
 export default async function TranscriptPage({ params }: PageProps) {
-  const { slug } = await params;
-  const { transcript, languages } = await getTranscriptPageData(slug);
+  const { channelSlug, transcriptSlug } = await params;
+  const { transcript, languages } = await getTranscriptPageDataByChannelAndSlug(
+    channelSlug,
+    transcriptSlug,
+  );
   if (!transcript) notFound();
 
   const markdownUrl = transcript.markdown_url;
@@ -132,7 +137,7 @@ export default async function TranscriptPage({ params }: PageProps) {
             <h1 className="font-headline text-[clamp(1.5rem,4vw,2.4rem)] font-bold leading-tight">
               {transcript.title}
             </h1>
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-label text-[0.7rem] uppercase tracking-[0.1em] text-ink-muted">
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-label text-[0.7rem] uppercase tracking-[0.12em] text-ink-muted">
               <Link href={`/channels/${transcript.channels.slug}`} className="hover:text-ink">{transcript.channels.title}</Link>
               <span aria-hidden="true">·</span>
               {transcript.duration_seconds && (
@@ -160,6 +165,7 @@ export default async function TranscriptPage({ params }: PageProps) {
               <LanguageSwitcher
                 languages={languages}
                 currentLanguage={transcript.language}
+                channelSlug={channelSlug}
               />
               <DownloadTranscriptButton
                 content={raw}
