@@ -1,8 +1,10 @@
 export {
   getTranscriptBySlug,
   getAllTranscriptSlugs,
+  getAllTranscriptChannelSlugs,
   fetchTranscriptMarkdown,
   getTranscriptPageData,
+  getTranscriptPageDataByChannelAndSlug,
 } from "./api/get-transcript";
 export {
   getLatestVideoGroups,
@@ -13,6 +15,7 @@ export {
 export type {
   Transcript,
   TranscriptWithChannel,
+  TranscriptDashboardItem,
   Channel,
   VideoGroup,
   LanguageVersion,

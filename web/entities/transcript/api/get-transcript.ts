@@ -32,6 +32,26 @@ export async function getAllTranscriptSlugs(): Promise<string[]> {
   return data.map((row) => row.slug);
 }
 
+/** Returns all {channelSlug, transcriptSlug} pairs for SSG (generateStaticParams). */
+export async function getAllTranscriptChannelSlugs(): Promise<
+  { channelSlug: string; transcriptSlug: string }[]
+> {
+  const supabase = createStaticClient();
+
+  const { data, error } = await supabase
+    .from("transcripts")
+    .select("slug, channels(slug)")
+    .eq("status", "done");
+
+  if (error || !data) return [];
+  return data
+    .filter((row) => (row.channels as { slug: string }[] | null)?.[0]?.slug)
+    .map((row) => ({
+      channelSlug: (row.channels as { slug: string }[])[0].slug,
+      transcriptSlug: row.slug,
+    }));
+}
+
 /** Downloads Markdown content from storage URL with ISR caching. */
 export async function fetchTranscriptMarkdown(
   url: string,
@@ -44,6 +64,42 @@ export async function fetchTranscriptMarkdown(
     return null;
   }
 }
+
+/**
+ * Loads the transcript and all its language siblings by channel + transcript slug.
+ * Cached per-request via React `cache` so generateMetadata and the page
+ * component share the result without duplicate DB calls.
+ */
+export const getTranscriptPageDataByChannelAndSlug = cache(
+  async (channelSlug: string, transcriptSlug: string) => {
+    const supabase = createStaticClient();
+
+    const { data, error } = await supabase
+      .from("transcripts")
+      .select("*, channels!inner(*)")
+      .eq("slug", transcriptSlug)
+      .eq("channels.slug", channelSlug)
+      .eq("status", "done")
+      .single();
+
+    if (error || !data) return { transcript: null, languages: [] };
+
+    const transcript = data as TranscriptWithChannel;
+
+    const { data: siblings } = await supabase
+      .from("transcripts")
+      .select("language, slug")
+      .eq("youtube_video_id", transcript.youtube_video_id)
+      .eq("status", "done")
+      .order("language");
+
+    const languages: LanguageVersion[] = (siblings ?? []).sort((a, b) =>
+      a.language === "en" ? -1 : b.language === "en" ? 1 : 0,
+    );
+
+    return { transcript, languages };
+  },
+);
 
 /**
  * Loads the transcript and all its language siblings.

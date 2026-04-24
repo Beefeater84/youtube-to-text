@@ -4,6 +4,7 @@ import type { LanguageVersion } from "../model/types";
 interface LanguageSwitcherProps {
   languages: LanguageVersion[];
   currentLanguage: string;
+  channelSlug: string;
 }
 
 /**
@@ -14,6 +15,7 @@ interface LanguageSwitcherProps {
 export function LanguageSwitcher({
   languages,
   currentLanguage,
+  channelSlug,
 }: LanguageSwitcherProps) {
   if (languages.length <= 1) return null;
 
@@ -43,7 +45,7 @@ export function LanguageSwitcher({
         return (
           <Link
             key={language}
-            href={`/transcripts/${slug}`}
+            href={`/${channelSlug}/${slug}`}
             className={`${base} border-ink/30 text-ink-muted transition-colors hover:bg-ink hover:text-paper`}
           >
             {language}

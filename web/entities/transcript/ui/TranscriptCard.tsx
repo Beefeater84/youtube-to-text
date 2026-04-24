@@ -36,7 +36,7 @@ export function TranscriptCard({ video }: { video: VideoGroup }) {
             return (
               <div key={lang.language} className="flex items-center gap-1">
                 <Link
-                  href={`/transcripts/${lang.slug}`}
+                  href={`/${video.channel_slug}/${lang.slug}`}
                   className="inline-flex h-5 items-center border border-ink/30 px-1.5 font-label text-[0.65rem] uppercase tracking-wider text-ink-muted transition-colors hover:bg-ink hover:text-paper"
                 >
                   {lang.language}
@@ -56,7 +56,7 @@ export function TranscriptCard({ video }: { video: VideoGroup }) {
       </header>
       <h3 className="font-headline text-[1rem] font-semibold leading-snug -tracking-[0.01em]">
         <Link
-          href={`/transcripts/${video.slug}`}
+          href={`/${video.channel_slug}/${video.slug}`}
           className="decoration-1 underline-offset-2 hover:underline"
         >
           {video.title}
