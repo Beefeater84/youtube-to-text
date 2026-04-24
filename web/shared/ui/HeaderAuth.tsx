@@ -39,10 +39,10 @@ export function HeaderAuth() {
   if (auth.status === "anonymous") {
     return (
       <Link
-        href="/login"
+        href="/dashboard"
         className="cursor-pointer border border-ink px-2.5 py-0.5 font-label text-[0.65rem] uppercase tracking-[0.1em] transition-[background-color,color] duration-150 hover:bg-ink hover:text-paper"
       >
-        Sign In
+        Dashboard
       </Link>
     );
   }

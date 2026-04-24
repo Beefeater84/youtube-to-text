@@ -67,8 +67,11 @@ const allUrls = [...new Set([
 // Protected routes: unauthenticated access must redirect to /login
 const protectedPaths = ['/dashboard'];
 
+// Routes to skip (e.g. dynamic content that depends on prod DB data)
+const skipPatterns = [/^http:\/\/localhost:3000\/channels\//];
+
 // Normalize sitemap URLs (they should already be absolute)
-const urlsToTest = allUrls.map(u => {
+const urlsToTest = allUrls.filter(u => !skipPatterns.some(p => p.test(u))).map(u => {
   try {
     const parsed = new URL(u);
     // rewrite host to localhost:3000 so tests run against local server

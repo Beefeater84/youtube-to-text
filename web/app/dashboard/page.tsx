@@ -6,6 +6,7 @@ import {
   getUserTranscriptsCount,
 } from "@/entities/transcript";
 import { CreateTranscriptForm } from "@/features/create-transcript";
+import { SignOutButton } from "@/features/auth";
 import { DashboardJobList } from "@/widgets/dashboard";
 import { Pagination } from "@/shared/ui";
 
@@ -50,9 +51,12 @@ export default async function DashboardPage({
 
   return (
     <section className="mx-auto max-w-[960px] px-4 pb-12 pt-6 md:px-6">
-      <h1 className="font-headline text-[clamp(1.5rem,4vw,2.2rem)] font-bold leading-tight">
-        Your Transcripts
-      </h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="font-headline text-[clamp(1.5rem,4vw,2.2rem)] font-bold leading-tight">
+          Your Transcripts
+        </h1>
+        <SignOutButton />
+      </div>
 
       <hr className="rule-double my-6" />
 
