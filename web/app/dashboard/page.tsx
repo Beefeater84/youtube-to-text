@@ -4,7 +4,6 @@ import { createClient } from "@/libs/supabase/server";
 import {
   getUserTranscripts,
   getUserTranscriptsCount,
-  type Transcript,
 } from "@/entities/transcript";
 import { CreateTranscriptForm } from "@/features/create-transcript";
 import { DashboardJobList } from "@/widgets/dashboard";
@@ -67,7 +66,7 @@ export default async function DashboardPage({
         Recent Jobs
       </h2>
 
-      <DashboardJobList transcripts={(transcripts as Transcript[]) ?? []} />
+      <DashboardJobList transcripts={transcripts ?? []} />
 
       <Pagination
         currentPage={currentPage}

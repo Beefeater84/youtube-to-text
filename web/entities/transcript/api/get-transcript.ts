@@ -45,9 +45,9 @@ export async function getAllTranscriptChannelSlugs(): Promise<
 
   if (error || !data) return [];
   return data
-    .filter((row) => row.channels && (row.channels as { slug: string }).slug)
+    .filter((row) => (row.channels as { slug: string }[] | null)?.[0]?.slug)
     .map((row) => ({
-      channelSlug: (row.channels as { slug: string }).slug,
+      channelSlug: (row.channels as { slug: string }[])[0].slug,
       transcriptSlug: row.slug,
     }));
 }
