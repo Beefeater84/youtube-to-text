@@ -15,6 +15,7 @@ export {
 export type {
   Transcript,
   TranscriptWithChannel,
+  TranscriptDashboardItem,
   Channel,
   VideoGroup,
   LanguageVersion,

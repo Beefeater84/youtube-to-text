@@ -35,6 +35,10 @@ export interface LanguageVersion {
   markdown_url?: string | null;
 }
 
+export interface TranscriptDashboardItem extends Transcript {
+  channel_slug: string | null;
+}
+
 export interface VideoGroup {
   youtube_video_id: string;
   title: string;

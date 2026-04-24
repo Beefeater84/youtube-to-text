@@ -1,11 +1,11 @@
 import Link from "next/link";
-import type { Transcript } from "@/entities/transcript";
+import type { TranscriptDashboardItem } from "@/entities/transcript";
 import { StatusBadge } from "./StatusBadge";
 import { DownloadTranscriptButton } from "@/features/download-transcript";
 import { getBaseUrl } from "@/shared/lib";
 
 interface DashboardJobListProps {
-  transcripts: Transcript[];
+  transcripts: TranscriptDashboardItem[];
 }
 
 /**
@@ -72,7 +72,11 @@ export function DashboardJobList({ transcripts }: DashboardJobListProps) {
           return (
             <Link
               key={transcript.id}
-              href={`/transcripts/${transcript.slug}`}
+              href={
+                transcript.channel_slug
+                  ? `/${transcript.channel_slug}/${transcript.slug}`
+                  : `#`
+              }
               className={cardClassName}
             >
               {content}

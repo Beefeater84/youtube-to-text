@@ -1,5 +1,5 @@
 import { createStaticClient } from "@/libs/supabase";
-import type { VideoGroup, Transcript } from "../model/types";
+import type { VideoGroup, Transcript, TranscriptDashboardItem } from "../model/types";
 import { groupTranscriptsToVideos } from "../lib/grouping";
 
 /**
@@ -53,20 +53,23 @@ export async function getUserTranscripts(
   userId: string,
   page: number = 1,
   pageSize: number = 20,
-): Promise<Transcript[]> {
+): Promise<TranscriptDashboardItem[]> {
   const supabase = createStaticClient();
   const start = (page - 1) * pageSize;
   const end = start + pageSize - 1;
 
   const { data, error } = await supabase
     .from("transcripts")
-    .select("*")
+    .select("*, channels(slug)")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .range(start, end);
 
   if (error || !data) return [];
-  return data as Transcript[];
+  return data.map((row) => ({
+    ...(row as Transcript),
+    channel_slug: (row.channels as { slug: string } | null)?.slug ?? null,
+  }));
 }
 
 /**
