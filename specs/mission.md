@@ -29,6 +29,7 @@ The service lets anyone read video content faster than watching it, and builds a
 - **Storage** — transcript text in Supabase Storage (S3-compatible), not in Postgres. Reason: cost, CDN, and decoupling.
 - **Auth** — Google OAuth only via Supabase Auth. Reason: simplest SSO, no password management.
 - **Worker language** — Python + yt-dlp (not Node.js). Reason: yt-dlp is the most reliable transcript/metadata source (150k+ stars); original Node.js library was unreliable.
+- **Browser-assisted fetch** — primary transcript-fetching path is a browser extension that runs in the user's own browser (their YouTube session, their IP). VPS worker with yt-dlp remains as a fallback only. Reason: YouTube aggressively bans server IPs and invalidates dedicated-account cookies; sourcing transcripts through user sessions sidesteps the anti-bot wall and removes a chronic operational burden.
 - **Queue** — Postgres-as-queue (`FOR UPDATE SKIP LOCKED`), no Redis. Reason: reduces infrastructure complexity; Redis removed after v0.3.
 - **Rendering** — Server-side (SSG/ISR), no client-only transcript rendering. Reason: SEO is the primary traffic source.
 - **LLM** — OpenAI GPT-4o-mini for cleanup, structuring, and translation. Reason: cost-effective for high-volume text processing.
@@ -40,6 +41,7 @@ The service lets anyone read video content faster than watching it, and builds a
 - Multi-language support (EN always produced; other languages on request).
 - SEO-optimised public transcript and channel pages.
 - User dashboard with job status tracking.
+- Browser extension (Chrome + Firefox) for in-browser transcript fetching.
 - Token-based monetisation (future).
 - Semantic search over transcript corpus (future).
 
@@ -53,3 +55,4 @@ The service lets anyone read video content faster than watching it, and builds a
 - Serverless function timeouts — long-running LLM/translation steps must run in the worker process, not in the Next.js API layer.
 - Postgres storage costs — never store full transcript text in the database.
 - SEO regression risk — content pages must remain SSG/ISR; no client-only rendering of transcript text.
+- YouTube anti-bot risk — server-side yt-dlp is fallback only; do not scale it as the primary path.

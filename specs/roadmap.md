@@ -59,7 +59,18 @@
 - Dashboard groups language versions under one video.
 - VPS deployment hardened and documented.
 
-## Phase 6: v0.6 — Token Ledger (No Real Payments)
+## Phase 6: v0.6 — Browser Extension Fetcher
+**Status:** Planned
+**Goal:** Browser extension fetches YouTube transcripts in the user's own browser; VPS worker becomes a fallback only.
+**Features:**
+- Chrome + Firefox extension (Manifest V3, TypeScript, Vite, webextension-polyfill).
+- "Save transcript" button injected on YouTube watch pages; auto-trigger via `?yt2text_job=<id>` deep-link from the dashboard.
+- Supabase Google OAuth in extension popup; JWT in `chrome.storage.local`.
+- New API routes: `POST /api/extension/submit-fetch`, `GET /api/extension/jobs/by-video`, `/auth/extension-callback`.
+- Worker skips `fetch_transcript` when `fetch_payload_path` is set on the job.
+- DB: new status `awaiting_browser_fetch`, new column `fetch_payload_path`, recovery RPC that flips stale rows to `pending` for the legacy yt-dlp fallback.
+
+## Phase 7: v0.7 — Token Ledger (No Real Payments)
 **Status:** Planned
 **Goal:** Internal credit system gating transcript creation.
 **Features:**
@@ -67,7 +78,7 @@
 - Job submission blocked when balance is zero.
 - Admin top-up capability.
 
-## Phase 7: v0.7 — Real Payments
+## Phase 8: v0.8 — Real Payments
 **Status:** Planned
 **Goal:** Users can purchase tokens.
 **Features:**
@@ -75,7 +86,7 @@
 - Webhook handling for payment confirmation.
 - Token top-up on successful payment.
 
-## Phase 8: v0.8 — Semantic Search (Beta)
+## Phase 9: v0.9 — Semantic Search (Beta)
 **Status:** Planned
 **Goal:** Search transcript corpus by meaning.
 **Features:**
