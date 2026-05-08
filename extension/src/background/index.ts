@@ -52,7 +52,7 @@ async function fetchAndSubmit(
     return { ok: false, error: tabResult.error };
   }
   if (tabResult.segments.length === 0) {
-    return { ok: false, error: "no captions available" };
+    return { ok: false, error: "VTT fetched but 0 segments parsed — check YouTube tab console" };
   }
 
   try {
@@ -96,7 +96,7 @@ function fetchCaptionsInTab(): Promise<
   const tracks = (captionRenderer?.["captionTracks"] as unknown[]) ?? [];
 
   if (tracks.length === 0) {
-    return Promise.resolve({ ok: false, error: "no captions available" });
+    return Promise.resolve({ ok: false, error: "no caption tracks found in player response" });
   }
 
   function pickTrack(ts: unknown[]): Record<string, unknown> {
@@ -129,20 +129,27 @@ function fetchCaptionsInTab(): Promise<
     })
     .then((vtt: string) => {
       const segments: { text: string; offset: number; duration: number }[] = [];
-      for (const block of vtt.split(/\n\n+/)) {
+      // normalize \r\n and split into cue blocks
+      const normalized = vtt.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+      for (const block of normalized.split(/\n\n+/)) {
         const lines = block.trim().split("\n");
         const timeLine = lines.find((l) => l.includes("-->"));
         if (!timeLine) continue;
-        const [rawStart, rawEnd] = timeLine.split("-->").map((s) => {
-          const p = s.trim().split(":");
+        // take only the two timestamps, ignore positioning info after the second one
+        const [startRaw, endRaw] = timeLine.split("-->").map((s) => s.trim().split(/\s/)[0]);
+        function toSec(ts: string): number {
+          const p = ts.split(":");
           return p.length === 3
             ? +p[0] * 3600 + +p[1] * 60 + parseFloat(p[2])
             : +p[0] * 60 + parseFloat(p[1]);
-        });
+        }
+        const rawStart = toSec(startRaw);
+        const rawEnd = toSec(endRaw);
         const text = lines
           .slice(lines.indexOf(timeLine) + 1)
           .join(" ")
-          .replace(/<[^>]+>/g, "")
+          .replace(/<[^>]+>/g, "")  // strip inline timestamps like <00:00:01.000> and <c>tags</c>
+          .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
           .trim();
         if (text) segments.push({ text, offset: rawStart, duration: rawEnd - rawStart });
       }

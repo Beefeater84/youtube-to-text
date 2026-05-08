@@ -38,9 +38,18 @@ Implementation complete on `replan/browser-extension`. Several bugs found and fi
 | "ytInitialPlayerResponse not found" | `scripting.executeScript` defaults to isolated world; `ytInitialPlayerResponse` lives on `window` in the main world | Added `world: "MAIN"` to `executeScript` call |
 | "Unexpected end of JSON input" | `baseUrl` from `ytInitialPlayerResponse` already contains `fmt=vtt3`; appending `&fmt=json3` created a duplicate parameter — YouTube returned empty body | Switched to VTT format; use `URL.searchParams.set("fmt", "vtt")` to replace, not append |
 
-### ⚠️ Current blocker
+### ⚠️ Current blocker — VTT parser returns 0 segments
 
-Caption fetching is still not confirmed working end-to-end. The VTT fix was applied last and has not yet been validated in Chrome. Next step: reload extension, open [test video](https://www.youtube.com/watch?v=kZ-zzHVUrO4), click "Save transcript", verify job reaches Done in dashboard.
+VTT fetch succeeds (HTTP 200, `r.text()` returns content), but the parser produces an empty `segments[]`. Confirmed with error message "VTT fetched but 0 segments parsed".
+
+Console log confirmed the caption track IS found in `ytInitialPlayerResponse`: one English ASR track (`kind: "asr"`, `languageCode: "en"`).
+
+Parser fixes applied so far (not yet confirmed working):
+
+- Normalized `\r\n` → `\n` before splitting into blocks
+- Timestamp parsing: take only first space-delimited token from each side of `-->` to ignore YouTube's `align:start position:0%` positioning suffix
+
+**Next debugging step:** add `console.log(normalized.slice(0, 500))` inside `fetchCaptionsInTab` to see the actual VTT content YouTube is returning, to understand why block splitting or text extraction produces nothing.
 
 ### Validation checklist (6.2)
 
