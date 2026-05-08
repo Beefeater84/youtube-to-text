@@ -1,60 +1,57 @@
 import browser from "webextension-polyfill";
-import { fetchCaptionsFromPage, isLiveStream, type CaptionFetchResult } from "@/lib/youtube/timedtext";
+import type { CaptionFetchResult } from "@/lib/youtube/timedtext";
 import { submitFetch } from "@/lib/api";
 import { getValidAccessToken } from "@/lib/auth";
 import type { BgMessage, BgResponse } from "@/shared/types";
 
 browser.runtime.onMessage.addListener(
-  (rawMsg: unknown, _sender): Promise<BgResponse> => {
+  (rawMsg: unknown, sender): Promise<BgResponse> => {
     const msg = rawMsg as BgMessage;
-    return handleMessage(msg);
+    return handleMessage(msg, sender.tab?.id);
   },
 );
 
-async function handleMessage(msg: BgMessage): Promise<BgResponse> {
+async function handleMessage(msg: BgMessage, tabId?: number): Promise<BgResponse> {
   if (msg.type === "FETCH_AND_SUBMIT") {
-    return fetchAndSubmit(msg.videoId, msg.jobId);
+    return fetchAndSubmit(msg.videoId, tabId, msg.jobId);
   }
   return { ok: false, error: "Unknown message type" };
 }
 
 async function fetchAndSubmit(
   videoId: string,
+  tabId?: number,
   jobId?: string,
 ): Promise<BgResponse> {
   const token = await getValidAccessToken();
   if (!token) return { ok: false, error: "Not authenticated" };
 
-  // Get the active YouTube tab to run the caption fetch in content script context
-  const tabs = await browser.tabs.query({ active: true, currentWindow: true });
-  const tab = tabs[0];
-  if (!tab?.id) return { ok: false, error: "No active tab" };
+  if (!tabId) return { ok: false, error: "No active tab" };
 
-  // Execute caption fetch in the tab (has access to ytInitialPlayerResponse and YouTube cookies)
-  let captionResult: CaptionFetchResult | null = null;
-  let captionError: string | null = null;
+  type TabResult =
+    | { ok: true; segments: CaptionFetchResult["segments"]; source_language: string; metadata: CaptionFetchResult["metadata"] }
+    | { ok: false; error: string };
+
+  let tabResult: TabResult | null = null;
 
   try {
     const results = await browser.scripting.executeScript({
-      target: { tabId: tab.id },
+      target: { tabId },
       func: fetchCaptionsInTab,
+      world: "MAIN",
     });
-    const result = results[0];
-    if (result.error) {
-      captionError = String(result.error);
-    } else {
-      captionResult = result.result as CaptionFetchResult;
-    }
+    tabResult = (results[0]?.result ?? null) as TabResult | null;
   } catch (e) {
-    captionError = e instanceof Error ? e.message : String(e);
+    return { ok: false, error: `executeScript failed: ${e instanceof Error ? e.message : String(e)}` };
   }
 
-  if (captionError || !captionResult) {
-    return { ok: false, error: captionError ?? "Caption fetch failed" };
+  if (!tabResult) {
+    return { ok: false, error: "No result from page — try refreshing the YouTube tab" };
   }
-
-  // Check for live stream
-  if (captionResult.segments.length === 0) {
+  if (!tabResult.ok) {
+    return { ok: false, error: tabResult.error };
+  }
+  if (tabResult.segments.length === 0) {
     return { ok: false, error: "no captions available" };
   }
 
@@ -63,9 +60,9 @@ async function fetchAndSubmit(
       job_id: jobId,
       video_id: videoId,
       target_language: "en",
-      source_language: captionResult.source_language,
-      metadata: captionResult.metadata,
-      segments: captionResult.segments,
+      source_language: tabResult.source_language,
+      metadata: tabResult.metadata,
+      segments: tabResult.segments,
     });
     return { ok: true, jobId: response.job_id };
   } catch (e) {
@@ -77,45 +74,32 @@ async function fetchAndSubmit(
 }
 
 // This function is serialized and injected into the YouTube tab.
-// It must be self-contained (no imports).
-function fetchCaptionsInTab(): Promise<{
-  segments: { text: string; offset: number; duration: number }[];
-  source_language: string;
-  metadata: {
-    title: string;
-    channel_name: string;
-    channel_id: string;
-    duration: number;
-    thumbnail_url: string;
-    description: string;
-  };
-}> {
+// It must be self-contained (no imports, no throws — returns { ok, error } instead).
+function fetchCaptionsInTab(): Promise<
+  | { ok: true; segments: { text: string; offset: number; duration: number }[]; source_language: string; metadata: { title: string; channel_name: string; channel_id: string; duration: number; thumbnail_url: string; description: string } }
+  | { ok: false; error: string }
+> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const pr = (window as any)["ytInitialPlayerResponse"] as Record<
-    string,
-    unknown
-  >;
-  if (!pr) throw new Error("ytInitialPlayerResponse not found");
+  const pr = (window as any)["ytInitialPlayerResponse"] as Record<string, unknown> | undefined;
+  if (!pr) return Promise.resolve({ ok: false, error: "ytInitialPlayerResponse not found — try refreshing the page" });
 
   if (pr["isLive"] || pr["isLiveContent"]) {
-    throw new Error("live stream: captions not available");
+    return Promise.resolve({ ok: false, error: "live stream: captions not available" });
   }
 
   const vd = pr["videoDetails"] as Record<string, unknown> | undefined;
-  if (!vd) throw new Error("videoDetails missing");
+  if (!vd) return Promise.resolve({ ok: false, error: "videoDetails missing in player response" });
 
   const captionRenderer = (
     pr["captions"] as Record<string, unknown> | undefined
-  )?.["playerCaptionsTracklistRenderer"] as
-    | Record<string, unknown>
-    | undefined;
+  )?.["playerCaptionsTracklistRenderer"] as Record<string, unknown> | undefined;
   const tracks = (captionRenderer?.["captionTracks"] as unknown[]) ?? [];
 
-  if (tracks.length === 0) throw new Error("no captions available");
+  if (tracks.length === 0) {
+    return Promise.resolve({ ok: false, error: "no captions available" });
+  }
 
-  function pickTrack(
-    ts: unknown[],
-  ): Record<string, unknown> {
+  function pickTrack(ts: unknown[]): Record<string, unknown> {
     const manualEn = ts.find(
       (t) =>
         (t as Record<string, unknown>)["languageCode"] === "en" &&
@@ -134,36 +118,37 @@ function fetchCaptionsInTab(): Promise<{
   }
 
   const track = pickTrack(tracks);
-  const baseUrl = track["baseUrl"] as string;
   const languageCode = track["languageCode"] as string;
+  const captionUrl = new URL(track["baseUrl"] as string);
+  captionUrl.searchParams.set("fmt", "vtt");
 
-  return fetch(`${baseUrl}&fmt=json3`)
+  return fetch(captionUrl.toString())
     .then((r) => {
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      return r.json();
+      if (!r.ok) throw new Error(`HTTP ${r.status} fetching captions`);
+      return r.text();
     })
-    .then((json: unknown) => {
-      const events = ((json as Record<string, unknown>)["events"] as unknown[]) ?? [];
+    .then((vtt: string) => {
       const segments: { text: string; offset: number; duration: number }[] = [];
-      for (const ev of events) {
-        const e = ev as Record<string, unknown>;
-        const segs = (e["segs"] as unknown[]) ?? [];
-        if (!segs.length) continue;
-        const text = segs
-          .map((s) => ((s as Record<string, unknown>)["utf8"] as string) ?? "")
-          .join("")
-          .replace(/\n/g, " ")
-          .trim();
-        if (!text) continue;
-        segments.push({
-          text,
-          offset: (e["tStartMs"] as number) / 1000,
-          duration: ((e["dDurationMs"] as number) ?? 0) / 1000,
+      for (const block of vtt.split(/\n\n+/)) {
+        const lines = block.trim().split("\n");
+        const timeLine = lines.find((l) => l.includes("-->"));
+        if (!timeLine) continue;
+        const [rawStart, rawEnd] = timeLine.split("-->").map((s) => {
+          const p = s.trim().split(":");
+          return p.length === 3
+            ? +p[0] * 3600 + +p[1] * 60 + parseFloat(p[2])
+            : +p[0] * 60 + parseFloat(p[1]);
         });
+        const text = lines
+          .slice(lines.indexOf(timeLine) + 1)
+          .join(" ")
+          .replace(/<[^>]+>/g, "")
+          .trim();
+        if (text) segments.push({ text, offset: rawStart, duration: rawEnd - rawStart });
       }
 
       const thumbs =
-        ((vd["thumbnail"] as Record<string, unknown>)?.[
+        ((vd!["thumbnail"] as Record<string, unknown>)?.[
           "thumbnails"
         ] as unknown[]) ?? [];
       const thumbnail_url =
@@ -172,16 +157,21 @@ function fetchCaptionsInTab(): Promise<{
         ] as string) ?? "";
 
       return {
+        ok: true as const,
         segments,
         source_language: languageCode,
         metadata: {
-          title: (vd["title"] as string) ?? "",
-          channel_name: (vd["author"] as string) ?? "",
-          channel_id: (vd["channelId"] as string) ?? "",
-          duration: parseInt((vd["lengthSeconds"] as string) ?? "0", 10),
+          title: (vd!["title"] as string) ?? "",
+          channel_name: (vd!["author"] as string) ?? "",
+          channel_id: (vd!["channelId"] as string) ?? "",
+          duration: parseInt((vd!["lengthSeconds"] as string) ?? "0", 10),
           thumbnail_url,
-          description: (vd["shortDescription"] as string) ?? "",
+          description: (vd!["shortDescription"] as string) ?? "",
         },
       };
-    });
+    })
+    .catch((e: unknown) => ({
+      ok: false as const,
+      error: String(e instanceof Error ? e.message : e),
+    }));
 }

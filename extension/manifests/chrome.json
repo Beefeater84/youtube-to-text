@@ -6,7 +6,9 @@
   "permissions": ["storage", "identity", "activeTab", "scripting"],
   "host_permissions": [
     "https://www.youtube.com/*",
-    "https://*.yt-reader.com/*"
+    "https://*.yt-reader.com/*",
+    "http://localhost:3000/*",
+    "http://127.0.0.1:54321/*"
   ],
   "background": {
     "service_worker": "src/background/index.ts",

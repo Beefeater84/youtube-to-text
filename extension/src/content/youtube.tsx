@@ -26,7 +26,12 @@ function SaveButton({ videoId, jobId }: { videoId: string; jobId?: string }) {
         setStatus("error");
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.toLowerCase().includes("extension context invalidated")) {
+        setError("Extension was reloaded — please refresh the page");
+      } else {
+        setError(msg);
+      }
       setStatus("error");
     }
   }

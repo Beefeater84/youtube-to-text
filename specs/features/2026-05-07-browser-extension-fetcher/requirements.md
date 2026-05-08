@@ -17,7 +17,7 @@ YouTube blocks server IPs and invalidates dedicated-account cookies, making the 
 - Extension MUST authenticate the user via Supabase Google OAuth in a popup; the resulting JWT MUST be stored in `chrome.storage.local`.
 - Content script MUST run on `https://www.youtube.com/watch*` pages.
 - Content script MUST read `?yt2text_job=<uuid>` from the URL and auto-trigger the fetch when present.
-- Background service worker MUST fetch captions from `https://www.youtube.com/api/timedtext` (json3 format) using the browser's YouTube cookies (no extra auth from the extension to YouTube).
+- Background service worker MUST fetch captions from `https://www.youtube.com/api/timedtext` (VTT format) using the browser's YouTube cookies (no extra auth from the extension to YouTube). The caption URL is taken from `ytInitialPlayerResponse.captions`; `fmt` is overridden to `vtt` via `URL.searchParams.set` to avoid duplicate parameters already present in the base URL.
 - Background MUST POST `{job_id?, video_id, target_language, source_language, metadata, segments[]}` to `/api/extension/submit-fetch` with the user's Supabase JWT in `Authorization: Bearer …`.
 - Extension popup MUST display the latest few jobs and a Login/Logout button. No transcript content is rendered in the popup.
 
