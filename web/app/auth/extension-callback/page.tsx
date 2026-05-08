@@ -1,30 +1,26 @@
 "use client";
 
 import { useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-);
 
 export default function ExtensionCallbackPage() {
   useEffect(() => {
-    (async () => {
-      const { data } = await supabase.auth.getSession();
-      const session = data.session;
-      if (session && window.opener) {
-        window.opener.postMessage(
-          {
-            access_token: session.access_token,
-            refresh_token: session.refresh_token,
-            expires_at: session.expires_at,
-          },
-          "*",
-        );
-      }
-      window.close();
-    })();
+    // Supabase implicit flow puts tokens in the URL hash:
+    // #access_token=...&refresh_token=...&expires_at=...
+    // Read directly — no Supabase client needed, works regardless of which
+    // Supabase project the extension is pointed at.
+    const hash = window.location.hash.slice(1);
+    const params = new URLSearchParams(hash);
+    const access_token = params.get("access_token");
+    const refresh_token = params.get("refresh_token");
+    const expires_at = Number(params.get("expires_at") ?? "0");
+
+    if (access_token && refresh_token && window.opener) {
+      window.opener.postMessage(
+        { access_token, refresh_token, expires_at },
+        "*",
+      );
+    }
+    window.close();
   }, []);
 
   return (
