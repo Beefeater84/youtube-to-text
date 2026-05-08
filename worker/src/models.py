@@ -25,6 +25,7 @@ class TranscriptJob:
     started_at: str | None
     created_at: str
     updated_at: str
+    fetch_payload_path: str | None = None
 
 
 @dataclass

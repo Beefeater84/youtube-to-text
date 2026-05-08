@@ -9,6 +9,7 @@ const STATUS_STYLES: Record<Status, string> = {
   done: "border-ink bg-ink text-paper",
   failed: "border-ink text-ink-muted",
   waiting_dependency: "border-ink text-ink-muted animate-pulse",
+  awaiting_browser_fetch: "border-ink text-ink-muted animate-pulse",
 };
 
 const STATUS_LABELS: Record<Status, string> = {
@@ -18,6 +19,7 @@ const STATUS_LABELS: Record<Status, string> = {
   done: "Done",
   failed: "Failed",
   waiting_dependency: "Waiting for EN",
+  awaiting_browser_fetch: "Waiting for extension",
 };
 
 /**

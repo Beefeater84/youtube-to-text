@@ -18,7 +18,7 @@ export interface Transcript {
   language: string;
   duration_seconds: number | null;
   markdown_url: string | null;
-  status: "pending" | "queued" | "processing" | "done" | "failed" | "waiting_dependency";
+  status: "pending" | "queued" | "processing" | "done" | "failed" | "waiting_dependency" | "awaiting_browser_fetch";
   user_id: string | null;
   published_at: string | null;
   created_at: string;

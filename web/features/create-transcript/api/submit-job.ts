@@ -5,9 +5,16 @@ import { createClient } from "@/libs/supabase/server";
 interface SubmitResult {
   success: boolean;
   error?: string;
+  youtubeDeepLink?: string;
 }
 
-const ACTIVE_STATUSES = ["done", "processing", "queued", "waiting_dependency"];
+const ACTIVE_STATUSES = [
+  "done",
+  "processing",
+  "queued",
+  "waiting_dependency",
+  "awaiting_browser_fetch",
+];
 
 /**
  * Server Action: validates the user, checks for duplicates, re-queues
@@ -54,24 +61,34 @@ export async function submitTranscriptJob(
 
     const newLangs = languages.filter((lang) => !existingLangs.has(lang));
 
+    let youtubeDeepLink: string | undefined;
+
     if (newLangs.length > 0) {
       const rows = newLangs.map((lang) => ({
         youtube_video_id: videoId,
         title: videoId,
         slug: lang === "en" ? videoId : `${videoId}-${lang}`,
-        status: "pending" as const,
+        status: lang === "en" ? ("awaiting_browser_fetch" as const) : ("pending" as const),
         language: lang,
         user_id: user.id,
       }));
 
-      const { error } = await supabase.from("transcripts").insert(rows);
+      const { data: inserted, error } = await supabase
+        .from("transcripts")
+        .insert(rows)
+        .select("id, language");
 
       if (error) {
         return { success: false, error: error.message };
       }
+
+      const enRow = inserted?.find((r) => r.language === "en");
+      if (enRow) {
+        youtubeDeepLink = `https://www.youtube.com/watch?v=${videoId}&yt2text_job=${enRow.id}`;
+      }
     }
 
-    return { success: true };
+    return { success: true, youtubeDeepLink };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return { success: false, error: message };

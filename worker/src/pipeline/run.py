@@ -20,6 +20,7 @@ from src.models import (
     VideoMetadata,
 )
 from src.pipeline.fetch_transcript import fetch_transcript
+from src.pipeline.load_fetched_payload import load_fetched_payload
 from src.pipeline.generate_markdown import generate_markdown
 from src.pipeline.parse_markdown import parse_markdown_to_sections
 from src.pipeline.process_with_llm import process_with_llm
@@ -46,8 +47,12 @@ def run_pipeline(job: TranscriptJob) -> PipelineResult:
 def _run_en_pipeline(job: TranscriptJob) -> PipelineResult:
     """Process an EN job: fetch subtitles, clean up with LLM, generate markdown.
     Handles UC1 (no subs) and UC4 (no EN subs, fallback to another language)."""
-    logger.info("step 1/5: fetching transcript for %s", job.youtube_video_id)
-    result: FetchResult = fetch_transcript(job.youtube_video_id, target_lang="en")
+    if job.fetch_payload_path:
+        logger.info("step 1/5: loading pre-fetched payload (browser extension) for %s", job.youtube_video_id)
+        result: FetchResult = load_fetched_payload(job.fetch_payload_path)
+    else:
+        logger.info("step 1/5: fetching transcript via yt-dlp for %s", job.youtube_video_id)
+        result: FetchResult = fetch_transcript(job.youtube_video_id, target_lang="en")
     meta = result.metadata
     segments = result.segments
     source_lang = result.source_language

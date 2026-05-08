@@ -66,6 +66,10 @@ export function CreateTranscriptForm({
       return;
     }
 
+    if (result.youtubeDeepLink) {
+      window.open(result.youtubeDeepLink, "_blank");
+    }
+
     setUrl("");
     setLanguages(["en"]);
     setStatus("success");
@@ -113,7 +117,7 @@ export function CreateTranscriptForm({
 
         {status === "success" && (
           <p className="font-label text-[0.75rem] text-ink-muted">
-            Transcript queued for processing.
+            YouTube opened in a new tab — click the extension button to send the transcript.
           </p>
         )}
 
