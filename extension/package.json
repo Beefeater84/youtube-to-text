@@ -1,0 +1,24 @@
+{
+  "name": "yt2text-extension",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "cross-env TARGET=chrome vite build",
+    "build:chrome": "cross-env TARGET=chrome vite build",
+    "build:firefox": "cross-env TARGET=firefox vite build",
+    "dev": "cross-env TARGET=chrome vite build --watch"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.4",
+    "preact": "^10.26.4",
+    "webextension-polyfill": "^0.12.0",
+    "zod": "^3.24.3"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.0.0-beta.32",
+    "@types/webextension-polyfill": "^0.10.7",
+    "cross-env": "^10.1.0",
+    "typescript": "^5.8.3",
+    "vite": "^5.4.19"
+  }
+}
