@@ -9,6 +9,7 @@ dependencies = [
     "openai",
     "python-dotenv",
     "Unidecode",
+    "requests",
 ]
 
 [project.optional-dependencies]

@@ -13,7 +13,6 @@ const ACTIVE_STATUSES = [
   "processing",
   "queued",
   "waiting_dependency",
-  "awaiting_browser_fetch",
 ];
 
 /**
@@ -68,7 +67,7 @@ export async function submitTranscriptJob(
         youtube_video_id: videoId,
         title: videoId,
         slug: lang === "en" ? videoId : `${videoId}-${lang}`,
-        status: lang === "en" ? ("awaiting_browser_fetch" as const) : ("pending" as const),
+        status: "pending" as const,
         language: lang,
         user_id: user.id,
       }));

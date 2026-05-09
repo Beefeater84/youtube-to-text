@@ -52,16 +52,6 @@ def recover_stale_jobs() -> None:
         logger.info("recovered %d stale job(s)", recovered)
 
 
-def recover_browser_stale_jobs() -> None:
-    """Reset jobs stuck in 'awaiting_browser_fetch' when the extension never responds.
-    Uses the RPC's default timeout (30 min); configurable via the SQL function parameter."""
-    sb = get_supabase()
-    result = sb.rpc("recover_browser_stale_jobs").execute()
-
-    recovered = result.data
-    if isinstance(recovered, int) and recovered > 0:
-        logger.info("recovered %d browser-stale job(s)", recovered)
-
 
 def ensure_storage_bucket() -> None:
     """Create the transcripts storage bucket if it doesn't exist."""

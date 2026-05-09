@@ -18,3 +18,7 @@ OPENAI_API_KEY: str = _require_env("OPENAI_API_KEY")
 POLL_INTERVAL_S: float = float(os.environ.get("POLL_INTERVAL_MS", "5000")) / 1000
 STALE_MINUTES: int = int(os.environ.get("STALE_MINUTES", "15"))
 MAX_RETRIES: int = int(os.environ.get("MAX_RETRIES", "3"))
+
+RESIDENTIAL_PROXY_URL: str | None = os.environ.get("RESIDENTIAL_PROXY_URL")
+BRIGHT_DATA_WEB_UNLOCKER_TOKEN: str | None = os.environ.get("BRIGHT_DATA_API")
+BRIGHT_DATA_ZONE: str = os.environ.get("BRIGHT_DATA_ZONE", "web_unlocker1")

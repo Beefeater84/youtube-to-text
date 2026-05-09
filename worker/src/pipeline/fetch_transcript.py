@@ -4,10 +4,11 @@ import json
 import logging
 import os
 import tempfile
-import urllib.request
 
+import requests
 import yt_dlp
 
+from src import config
 from src.models import FetchResult, RawSegment, VideoMetadata
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,10 @@ def fetch_transcript(video_id: str, target_lang: str = "en") -> FetchResult:
         "js_runtimes": {"node": {}, "deno": {}},
         "remote_components": ["ejs:github"],
     }
+
+    if config.RESIDENTIAL_PROXY_URL:
+        ydl_opts["proxy"] = config.RESIDENTIAL_PROXY_URL
+        logger.info("yt-dlp routing through residential proxy")
 
     # Handle cookies to bypass bot detection in production
     cookie_file = os.environ.get("YOUTUBE_COOKIES_FILE")
@@ -183,7 +188,30 @@ def _download_subtitle_from_info(info: dict, video_id: str, lang: str) -> None:
     out_path = os.path.join(_TMP_DIR, f"{video_id}.{lang}.{ext}")
 
     logger.info("downloading %s subtitles (%s) directly", lang, ext)
-    urllib.request.urlretrieve(chosen["url"], out_path)
+
+    proxies = {"http": config.RESIDENTIAL_PROXY_URL, "https": config.RESIDENTIAL_PROXY_URL} \
+        if config.RESIDENTIAL_PROXY_URL else None
+
+    response = requests.get(chosen["url"], proxies=proxies, timeout=30)
+
+    if response.status_code != 200 and config.BRIGHT_DATA_WEB_UNLOCKER_TOKEN:
+        logger.warning(
+            "subtitle fetch returned %d, retrying via Web Unlocker", response.status_code
+        )
+        response = requests.post(
+            "https://api.brightdata.com/request",
+            headers={
+                "Authorization": f"Bearer {config.BRIGHT_DATA_WEB_UNLOCKER_TOKEN}",
+                "Content-Type": "application/json",
+            },
+            json={"zone": config.BRIGHT_DATA_ZONE, "url": chosen["url"], "format": "raw"},
+            timeout=60,
+        )
+
+    response.raise_for_status()
+
+    with open(out_path, "wb") as f:
+        f.write(response.content)
 
 
 def _parse_subtitles(video_id: str, lang: str) -> list[RawSegment]:

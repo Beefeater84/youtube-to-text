@@ -17,7 +17,6 @@ from src.db import (
     grab_next_job,
     mark_job_done,
     mark_job_failed,
-    recover_browser_stale_jobs,
     recover_stale_jobs,
 )
 from src.models import DependencyPending
@@ -49,7 +48,6 @@ def main() -> None:
     logger.info("starting...")
 
     recover_stale_jobs()
-    recover_browser_stale_jobs()
     ensure_storage_bucket()
 
     logger.info(
@@ -61,7 +59,6 @@ def main() -> None:
 
     while not _shutting_down:
         try:
-            recover_browser_stale_jobs()
             job = grab_next_job()
 
             if job is None:
