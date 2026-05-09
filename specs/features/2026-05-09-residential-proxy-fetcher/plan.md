@@ -2,7 +2,7 @@
 
 **Phase:** 6.5
 **Branch:** feature/residential-proxy-fetcher
-**Status:** planning
+**Status:** in-progress
 
 ## Goal
 
@@ -127,6 +127,30 @@ Add below the existing `# BRIGHT_DATA_API=...` line:
 ```
 
 The `BRIGHT_DATA_API` line is already there — just un-comment it when deploying to prod.
+
+## Current Status (2026-05-09)
+
+### Выполнено
+
+- Groups 1–4 реализованы: `config.py`, `pyproject.toml`, `fetch_transcript.py`, `.env`
+- `submit-job.ts` исправлен: EN-джоб теперь создаётся со статусом `pending` (был `awaiting_browser_fetch`)
+- `recover_browser_stale_jobs` удалён из воркера и `db.py`
+- Миграция `20260509120000` реверт `grab_pending_transcript` к pre-extension логике
+
+### Следующий шаг — ошибка прокси
+
+Ошибка: `Tunnel connection failed: 403 Forbidden` при локальном запуске с `RESIDENTIAL_PROXY_URL`.
+
+**Причина:** Group 0 не выполнена — IP локальной машины не добавлен в whitelist зоны `yt_reader` в Bright Data.
+
+**Что делать в следующем контексте:**
+
+1. SSH на сервер → `curl https://ifconfig.me` → получить IP
+2. Bright Data dashboard → зона `yt_reader` → Authorized IPs → добавить IP сервера
+3. Либо: добавить локальный IP для тестирования, либо тестировать только с сервера
+4. После whitelist — запустить воркер снова и проверить что прокси проходит
+
+---
 
 ## Key Decisions
 
