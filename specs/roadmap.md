@@ -60,15 +60,22 @@
 - VPS deployment hardened and documented.
 
 ## Phase 6: v0.6 — Browser Extension Fetcher
+**Status:** Cancelled
+
+**Reason:** YouTube does not return subtitles via the `timedtext` API when called from an extension context, even with an authenticated user session. Multiple days of investigation confirmed the approach is not viable.
+
+## Phase 6.5: v0.6.5 — Residential Proxy Fetcher
+
 **Status:** Planned
-**Goal:** Browser extension fetches YouTube transcripts in the user's own browser; VPS worker becomes a fallback only.
+
+**Goal:** Route all yt-dlp and subtitle HTTP requests through Bright Data residential proxies so YouTube sees a home-user IP instead of the VPS datacenter IP; eliminate the bot-detection/CAPTCHA wall on the server.
+
 **Features:**
-- Chrome + Firefox extension (Manifest V3, TypeScript, Vite, webextension-polyfill).
-- "Save transcript" button injected on YouTube watch pages; auto-trigger via `?yt2text_job=<id>` deep-link from the dashboard.
-- Supabase Google OAuth in extension popup; JWT in `chrome.storage.local`.
-- New API routes: `POST /api/extension/submit-fetch`, `GET /api/extension/jobs/by-video`, `/auth/extension-callback`.
-- Worker skips `fetch_transcript` when `fetch_payload_path` is set on the job.
-- DB: new status `awaiting_browser_fetch`, new column `fetch_payload_path`, recovery RPC that flips stale rows to `pending` for the legacy yt-dlp fallback.
+
+- Residential proxy (`RESIDENTIAL_PROXY_URL`) wired into yt-dlp opts and urllib subtitle download in `worker/src/pipeline/fetch_transcript.py`.
+- Web Unlocker API (`BRIGHT_DATA_WEB_UNLOCKER_TOKEN`, `BRIGHT_DATA_ZONE`) used as fallback for subtitle HTTP fetch when residential proxy alone triggers a challenge.
+- New env vars documented in `worker/.env.example`.
+- Proxy disabled when env vars are absent (local dev stays unchanged).
 
 ## Phase 7: v0.7 — Token Ledger (No Real Payments)
 **Status:** Planned
