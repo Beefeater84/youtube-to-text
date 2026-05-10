@@ -139,16 +139,68 @@ The `BRIGHT_DATA_API` line is already there — just un-comment it when deployin
 
 ### Следующий шаг — ошибка прокси
 
-Ошибка: `Tunnel connection failed: 403 Forbidden` при локальном запуске с `RESIDENTIAL_PROXY_URL`.
+Ошибка: `Tunnel connection failed: 403 Forbidden` при подключении к youtube.com через зону `yt_reader`.
 
-**Причина:** Group 0 не выполнена — IP локальной машины не добавлен в whitelist зоны `yt_reader` в Bright Data.
+**Диагностика (2026-05-10):**
 
-**Что делать в следующем контексте:**
+- `curl` с port 33335 → 200 OK (credentials верные, IP не заблокирован)
+- `requests` с port 22225 + `verify=False` → geo.brdtest.com: 200 OK, youtube.com: 403
+- Вывод: youtube.com блокируется на уровне зоны `yt_reader`, не на уровне IP или SSL
 
-1. SSH на сервер → `curl https://ifconfig.me` → получить IP
-2. Bright Data dashboard → зона `yt_reader` → Authorized IPs → добавить IP сервера
-3. Либо: добавить локальный IP для тестирования, либо тестировать только с сервера
-4. После whitelist — запустить воркер снова и проверить что прокси проходит
+**Вероятные причины:**
+
+- Зона `yt_reader` требует установки Bright Data SSL-сертификата для HTTPS-инспекции
+- Зона не настроена под YouTube (нет target site / premium domain)
+- Bright Data блокирует YouTube по умолчанию для residential зон без спец. конфигурации
+
+**Установлено (2026-05-10):**
+
+- YouTube относится к restricted domains в Bright Data — доступ закрыт до верификации аккаунта
+- SSL-сертификат скачан: `worker/brightdata_proxy_ca/` (добавлен в `.gitignore`)
+- Порт для сертификата: **33335** (указано в названии файла)
+
+### Следующий шаг — пройти KYC верификацию в Bright Data
+
+**Ссылка:** [brightdata.com/cp/kyc](https://brightdata.com/cp/kyc)
+
+После верификации YouTube должен стать доступен через зону `yt_reader`. Затем:
+
+1. Проверить curl с `--cacert` к `youtube.com`
+2. Зарегистрировать сертификат системно (локально и на VPS)
+3. Сменить порт в `RESIDENTIAL_PROXY_URL` с 22225 на 33335
+4. Запустить воркер и убедиться что 403 ушёл
+
+### Group 5 (условная): Bright Data SSL-сертификат для деплоя
+
+**Выполнять только если** установка сертификата решает 403 для YouTube.
+
+**Локально:** установить в системный cert store или задать env var:
+
+```bash
+REQUESTS_CA_BUNDLE=/path/to/brightdata.crt
+SSL_CERT_FILE=/path/to/brightdata.crt
+```
+
+**На VPS (деплой):**
+
+1. Сохранить `brightdata.crt` в репозиторий: `worker/certs/brightdata.crt`
+2. Добавить в `.env` на VPS:
+
+   ```text
+   REQUESTS_CA_BUNDLE=/path/to/worker/certs/brightdata.crt
+   SSL_CERT_FILE=/path/to/worker/certs/brightdata.crt
+   ```
+
+3. Перезапустить воркер
+
+Альтернатива (системный cert store на VPS, один раз):
+
+```bash
+sudo cp brightdata.crt /usr/local/share/ca-certificates/brightdata.crt
+sudo update-ca-certificates
+```
+
+Примечание: `requests` и Python `ssl` подхватывают `REQUESTS_CA_BUNDLE` / `SSL_CERT_FILE` автоматически — yt-dlp тоже, так как использует Python ssl. Менять код не нужно.
 
 ---
 

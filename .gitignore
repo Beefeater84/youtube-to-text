@@ -18,6 +18,9 @@ worker/*.egg-info/
 .env*
 !.env.example
 client_secret_*.json
+
+# Proxy certificates (not secret, but reveals proxy provider)
+worker/brightdata_proxy_ca/
 *.pem
 *.key
 youtube_cookies.txt
