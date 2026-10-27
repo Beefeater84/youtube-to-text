@@ -260,3 +260,98 @@ def download_markdown_from_storage(markdown_url: str) -> str:
     Used in UC2 to fetch the EN transcript for translation."""
     with urllib.request.urlopen(markdown_url) as resp:
         return resp.read().decode("utf-8")
+
+
+# Statuses that mean a job exists and should not be re-queued on submit.
+# Mirrors ACTIVE_STATUSES in web/features/create-transcript/api/submit-job.ts.
+ACTIVE_STATUSES = ("done", "processing", "queued", "waiting_dependency")
+
+
+def submit_jobs(
+    video_id: str,
+    languages: list[str],
+    user_id: str | None = None,
+) -> None:
+    """Submit transcript jobs for a video, like the web submitTranscriptJob action:
+    re-queue existing rows that are not active (failed, pending) and insert
+    pending rows for missing languages. Used by the CLI."""
+    sb = get_supabase()
+    result = (
+        sb.table("transcripts")
+        .select("id, language, status")
+        .eq("youtube_video_id", video_id)
+        .in_("language", languages)
+        .execute()
+    )
+    existing = result.data or []
+    existing_langs = {row["language"] for row in existing}
+
+    stale_ids = [row["id"] for row in existing if row["status"] not in ACTIVE_STATUSES]
+    if stale_ids:
+        (
+            sb.table("transcripts")
+            .update({"status": "pending"})
+            .eq("youtube_video_id", video_id)
+            .in_("id", stale_ids)
+            .execute()
+        )
+
+    new_langs = [lang for lang in languages if lang not in existing_langs]
+    if new_langs:
+        sb.table("transcripts").insert([
+            {
+                "youtube_video_id": video_id,
+                "title": video_id,
+                "slug": video_id if lang == "en" else f"{video_id}-{lang}",
+                "status": "pending",
+                "language": lang,
+                "user_id": user_id,
+            }
+            for lang in new_langs
+        ]).execute()
+
+
+def get_transcript(job_id: str) -> dict | None:
+    """Read a full transcripts row by id. Used by the CLI to poll job status."""
+    sb = get_supabase()
+    result = sb.table("transcripts").select("*").eq("id", job_id).limit(1).execute()
+    if result.data:
+        return result.data[0]
+    return None
+
+
+def find_transcript(video_id: str, language: str) -> dict | None:
+    """Read a full transcripts row by (video, language) in any status."""
+    sb = get_supabase()
+    result = (
+        sb.table("transcripts")
+        .select("*")
+        .eq("youtube_video_id", video_id)
+        .eq("language", language)
+        .limit(1)
+        .execute()
+    )
+    if result.data:
+        return result.data[0]
+    return None
+
+
+def claim_job(job_id: str) -> TranscriptJob | None:
+    """Atomically move one specific job from 'pending' to 'processing'.
+    Returns the claimed job, or None when it was not pending (another worker
+    took it, or it is in another status). Used by the CLI --inline mode."""
+    sb = get_supabase()
+    result = (
+        sb.table("transcripts")
+        .update({
+            "status": "processing",
+            "started_at": datetime.now(timezone.utc).isoformat(),
+        })
+        .eq("id", job_id)
+        .eq("status", "pending")
+        .execute()
+    )
+    if not result.data:
+        return None
+    row = result.data[0]
+    return TranscriptJob(**{k: row[k] for k in TranscriptJob.__dataclass_fields__})
