@@ -38,3 +38,6 @@
 - Root `.env` (Google creds) exists locally and is untracked; never read its values into output or commits.
 
 ## Gaps found during implementation
+- Group 1 result: secret variable is `JWT_SECRET` (not `SUPABASE_AUTH_JWT_SECRET`): CLI 2.111.0 uses an unresolved `env(...)` literally; `env(JWT_SECRET)` is 15 chars < 16, so start fails without `supabase/.env`. Keep the name ≤ 10 chars. Script: `bash scripts/supabase-env.sh`, exits 1 if the file exists. Migration `20261027120000_transcripts_bucket.sql` (v0.5).
+- Postgres 17.6.1.156 (CLI 2.111.0): `pg_default_acl` grants only Dxtm to API roles, so app tables return 42501 for anon/authenticated/service_role until explicit GRANTs exist.
+- Local Kong does not validate `apikey`: demo `sb_publishable_`/`sb_secret_` keys pass unmapped and run as anon (400 on storage, never service_role). Demo anon JWT → 401.
