@@ -166,6 +166,19 @@ jwt_expiry = 3600
 # jwt_issuer = ""
 # Path to JWT signing key. DO NOT commit your signing keys file to git.
 # signing_keys_path = "./signing_keys.json"
+# This project's own keys instead of the CLI demo keys. The demo keys are the
+# same in every CLI install, so another local stack's tokens would also work
+# here. The values come from the untracked supabase/.env; create it with
+# `bash scripts/supabase-env.sh` (see supabase/.env.example). anon and
+# service_role JWTs are derived from jwt_secret by the CLI.
+# The CLI does not fail on an unresolved env(...): it uses the literal text as
+# the value. The short variable name is deliberate: without supabase/.env the
+# literal "env(JWT_SECRET)" is 15 characters, below the CLI minimum of 16, so
+# `supabase start` refuses to run instead of signing tokens with a public
+# string. Keep the name at 10 characters or less.
+jwt_secret = "env(JWT_SECRET)"
+publishable_key = "env(SUPABASE_AUTH_PUBLISHABLE_KEY)"
+secret_key = "env(SUPABASE_AUTH_SECRET_KEY)"
 # If disabled, the refresh token will never expire.
 enable_refresh_token_rotation = true
 # Allows refresh tokens to be reused after expiry, up to the specified interval in seconds.

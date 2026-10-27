@@ -3,7 +3,7 @@
   "private": true,
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.1",
-    "supabase": "^2.87.2",
+    "supabase": "2.111.0",
     "tailwindcss": "^4.2.1"
   }
 }

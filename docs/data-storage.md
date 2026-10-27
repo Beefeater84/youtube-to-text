@@ -65,11 +65,7 @@ Transcript content is stored as Markdown files in a **public** Supabase Storage 
 
 ### Bucket Setup
 
-The worker creates the bucket automatically on first startup via the Supabase admin client:
-
-```typescript
-await supabase.storage.createBucket('transcripts', { public: true });
-```
+The public bucket `transcripts` is created by the migration `supabase/migrations/20261027120000_transcripts_bucket.sql`, so every fresh stack has it after `npx supabase start` or `db reset`. The worker's `ensure_storage_bucket()` (`worker/src/db.py`) stays as a fallback: on startup it calls `create_bucket("transcripts", public=True)` and ignores "already exists".
 
 ### URL Resolution
 
