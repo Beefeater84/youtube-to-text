@@ -1,10 +1,24 @@
-import type { VideoGroup, LanguageVersion } from "../model/types";
+import type { VideoGroup, LanguageVersion, Transcript } from "../model/types";
+
+type TranscriptRowWithChannel = Pick<
+  Transcript,
+  | "youtube_video_id"
+  | "title"
+  | "slug"
+  | "thumbnail_url"
+  | "language"
+  | "duration_seconds"
+  | "created_at"
+  | "markdown_url"
+> & { channels?: unknown };
 
 /**
  * Shared logic to group raw transcript rows into VideoGroup objects.
  * Prioritizes English versions for the primary title and slug.
  */
-export function groupTranscriptsToVideos(rows: any[]): VideoGroup[] {
+export function groupTranscriptsToVideos(
+  rows: TranscriptRowWithChannel[],
+): VideoGroup[] {
   const groupMap = new Map<string, VideoGroup>();
 
   for (const row of rows) {
