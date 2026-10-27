@@ -21,6 +21,7 @@ def test_translates_from_existing_en(make_job, sample_markdown) -> None:
     with (
         patch("src.pipeline.run.find_done_transcript", return_value=en_record),
         patch("src.pipeline.run.download_markdown_from_storage", return_value=sample_markdown),
+        patch("src.pipeline.run.translate_sections", side_effect=lambda s, src, tgt: s),
         patch("src.pipeline.run.enrich_transcript") as mock_enrich,
         patch("src.pipeline.run.upload_to_storage", return_value="https://storage.example.com/ab/abc123XYZ/ru.md") as mock_upload,
     ):

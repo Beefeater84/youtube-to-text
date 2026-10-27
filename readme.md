@@ -35,6 +35,8 @@ npx supabase status -o env     # prints API_URL, ANON_KEY, SERVICE_ROLE_KEY, PUB
 
 Copy the values from `npx supabase status -o env` into `web/.env.local` (`NEXT_PUBLIC_SUPABASE_URL` = `API_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` = `ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` = `SERVICE_ROLE_KEY`) and `worker/.env` (`SUPABASE_URL` = `API_URL`, `SUPABASE_SERVICE_ROLE_KEY` = `SERVICE_ROLE_KEY`, plus `OPENAI_API_KEY`). Never commit these files or `supabase/.env`.
 
+To create a transcript without the frontend, use the worker CLI (`cd worker && .venv/bin/python -m src.cli <url|id>`); see [worker/agent.md](worker/agent.md#cli).
+
 #### Own keys, no demo keys
 The stack does not use the well-known Supabase CLI demo keys. `scripts/supabase-env.sh` generates a random JWT secret and random `sb_publishable_...` / `sb_secret_...` keys into the gitignored `supabase/.env` (template: `supabase/.env.example`). It never overwrites an existing file. `supabase/config.toml` reads the values via `env(...)`, and the CLI derives the anon and service_role JWTs from the secret.
 
