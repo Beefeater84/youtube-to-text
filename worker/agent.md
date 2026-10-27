@@ -57,3 +57,27 @@ Expected behavior:
 - Update the `channels` record with the English title and slug.
 - Translate the cleaned transcript into English with LLM.
 - Then follow the standard pipeline: saving to Markdown, publishing on the website using English metadata (title and channel title).
+## CLI
+
+Create a transcript without the frontend. The CLI submits jobs like the web action (EN is always included; `failed` and `pending` rows are re-queued; missing languages are inserted with no user), then waits for the worker or runs the pipeline itself.
+
+Setup:
+
+- Run from `worker/` with the worker venv: `.venv/bin/python -m src.cli ...`.
+- `worker/.env` must contain `SUPABASE_URL` (= `API_URL`) and `SUPABASE_SERVICE_ROLE_KEY` (= `SERVICE_ROLE_KEY`) from `npx supabase status -o env`, plus `OPENAI_API_KEY`.
+
+Commands:
+
+- Wait for the running worker (default): `.venv/bin/python -m src.cli https://youtu.be/dQw4w9WgXcQ`. Prints status changes (`pending` → `processing` → `done`/`failed`) to stderr and the Markdown URL to stdout.
+- Run in this process: `.venv/bin/python -m src.cli dQw4w9WgXcQ --inline`. Needs no running worker. A worker running in parallel may grab the job first; then the CLI exits with an error and you can rerun without `--inline` to wait for it.
+- Non-English: `.venv/bin/python -m src.cli dQw4w9WgXcQ --lang ru --inline`. With `--inline`, the EN job runs first (skipped when EN is already done), then the translation.
+- Save the Markdown to a file: `--out transcript.md` (nothing is printed to stdout).
+- Wait limit: `--timeout 600` (seconds, default 900). Only used in wait mode.
+- Input: a `youtube.com/watch?v=`, `youtu.be/`, `/embed/` or `/shorts/` URL, or a bare 11-character video id.
+- If the requested language is already `done`, the CLI returns it immediately and writes nothing.
+
+Exit codes:
+
+- `0`: done.
+- `1`: the job failed; the error message (e.g. `No subtitles found`) is printed to stderr.
+- `2`: timeout, invalid URL/video id, or invalid `--lang`.
