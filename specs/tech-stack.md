@@ -30,7 +30,7 @@
 - `.github/workflows/deploy.yml` builds images to GHCR and deploys to the VDS on push to `main`.
 - `.github/workflows/failed-jobs-alert.yml` is manual-only (schedule disabled).
 
-**Environments:** local development (Supabase CLI + Docker) and production (Vercel + home machine). There is no CI workflow for checks; run them locally.
+**Environments:** local development (Supabase CLI + Docker) and production (Vercel + home machine). Local Supabase uses the `561xx` port range instead of the CLI default `543xx` (API `56121`, DB `56122`, Studio `56123`), so it can run next to other Supabase CLI projects on the same machine. There is no CI workflow for checks; run them locally.
 
 **Environment variables:**
 - web: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SITE_URL`, `SUPABASE_SERVICE_ROLE_KEY`.

@@ -21,3 +21,6 @@ client_secret_*.json
 *.pem
 *.key
 youtube_cookies.txt
+
+# Local handoff notes (personal machine details, never commit)
+HANDOFF-*.md

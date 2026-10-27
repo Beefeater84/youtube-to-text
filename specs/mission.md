@@ -60,6 +60,7 @@ The service lets anyone read video content faster than watching it, and builds a
 ## Constraints
 
 - One developer maintains the project. Prefer simple solutions and minimal infrastructure.
+- The repository is public. Everything committed (code, config, docs, specs, git history) is readable by anyone. Never commit secrets, keys, tokens, cookies, real `.env` files, personal hostnames or IPs. Config refers to secrets only through `env(...)` or empty `.env.example` entries. Anything non-obvious in committed config gets a comment explaining why, for people who clone the repo.
 - YouTube blocks datacenter IPs. The worker must run from a residential IP (home machine); cookies via `YOUTUBE_COOKIES_FILE` / `YOUTUBE_COOKIES_CONTENT` when needed.
 - Long-running LLM and translation work runs only in the worker, never in Next.js request handlers (serverless timeouts).
 - Never store full transcript text in Postgres.
