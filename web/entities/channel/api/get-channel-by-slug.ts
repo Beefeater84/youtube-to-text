@@ -1,5 +1,7 @@
 import { createStaticClient } from "@/libs/supabase";
-import type { ChannelWithCount } from "../model/types";
+import type { Channel, ChannelWithCount } from "../model/types";
+
+type ChannelRowWithTranscripts = Channel & { transcripts: { id: string }[] | null };
 
 /**
  * Fetches a single channel by its URL slug, including transcript count.
@@ -18,7 +20,7 @@ export async function getChannelBySlug(
 
   if (error || !data || data.length === 0) return null;
 
-  const ch = data[0] as any;
+  const ch = data[0] as ChannelRowWithTranscripts;
   return {
     id: ch.id,
     youtube_id: ch.youtube_id,
@@ -46,5 +48,5 @@ export async function getAllChannelSlugs(): Promise<string[]> {
 
   if (error || !data) return [];
 
-  return data.map((ch: any) => ch.slug);
+  return data.map((ch: { slug: string }) => ch.slug);
 }

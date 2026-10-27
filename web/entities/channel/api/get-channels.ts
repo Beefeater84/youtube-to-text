@@ -1,5 +1,7 @@
 import { createStaticClient } from "@/libs/supabase";
-import type { ChannelWithCount } from "../model/types";
+import type { Channel, ChannelWithCount } from "../model/types";
+
+type ChannelRowWithTranscripts = Channel & { transcripts: { id: string }[] | null };
 
 /**
  * Fetches top channels sorted by number of completed transcripts.
@@ -17,8 +19,8 @@ export async function getTopChannels(
 
   if (error || !data) return [];
 
-  return data
-    .map((ch: any) => ({
+  return (data as ChannelRowWithTranscripts[])
+    .map((ch) => ({
       id: ch.id,
       youtube_id: ch.youtube_id,
       title: ch.title,
