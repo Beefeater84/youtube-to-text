@@ -17,7 +17,7 @@ Later: -
 
 - Task: #33
 - Goal: The whole worker test suite is green and the CLI is documented.
-- Files: `worker/tests/test_uc3_create_en_dependency.py` (change: patch `defer_for_dependency`/current API), `worker/agent.md` (change: CLI section), `readme.md` (change: one line linking to it)
+- Files: `worker/tests/test_uc3_create_en_dependency.py` (change: patch `defer_for_dependency`/current API), `worker/tests/test_uc2_translate_from_en.py`, `worker/tests/test_uc4_no_en_subs.py` (change: mock the OpenAI calls they make for real), `worker/agent.md` (change: CLI section), `readme.md` (change: one line linking to it)
 - Reuse: -
 - Done when: `cd worker && .venv/bin/pytest` passes fully; docs show the commands for wait mode, `--inline`, `--out`, exit codes and required `worker/.env` vars.
 - Complexity: normal

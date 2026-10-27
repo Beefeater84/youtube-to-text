@@ -34,3 +34,7 @@
 - Do not start, stop or modify any Supabase stack; tests are mock-only.
 
 ## Gaps found during implementation
+- Worker venv: system python has no ensurepip; pip was bootstrapped into `worker/.venv` with get-pip.py; `pip install -e '.[dev]'` done. Use `cd worker && .venv/bin/pytest`.
+- `increment_retry_and_fail` always sets `failed` (`supabase/migrations/20260305180000_worker_fields.sql`).
+- Pre-existing failures: `test_uc3_create_en_dependency.py` x3 (stale `requeue_job`), `test_uc2_translate_from_en.py::test_translates_from_existing_en` and `test_uc4_no_en_subs.py` x2 (unmocked real OpenAI calls → 401).
+- Group 1 API (`worker/src/cli.py`): `run(argv) -> int`, `main()`, `extract_video_id`, `ensure_jobs`, `wait_for_job`, `run_inline`, `deliver`; exit codes 0/1/2; `--timeout` seconds (default 900); `--lang` `^[a-z]{2}$`. `db.py`: `ACTIVE_STATUSES`, `submit_jobs`, `get_transcript`, `find_transcript`, `claim_job`.
