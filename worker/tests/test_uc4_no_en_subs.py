@@ -5,6 +5,7 @@ from unittest.mock import patch
 from src.models import (
     FetchResult,
     PipelineResult,
+    ProcessedSection,
     RawSegment,
     TranscriptJob,
     VideoMetadata,
@@ -32,11 +33,18 @@ def _make_fetch_result_es() -> FetchResult:
     )
 
 
+_ES_SECTIONS = [ProcessedSection(title="Introduccion", timestamp=0, content="Hola mundo.")]
+_EN_SECTIONS = [ProcessedSection(title="Introduction", timestamp=0, content="Hello world.")]
+
+
 def test_en_job_with_spanish_fallback(make_job) -> None:
     job: TranscriptJob = make_job(language="en")
 
     with (
         patch("src.pipeline.run.fetch_transcript", return_value=_make_fetch_result_es()),
+        patch("src.pipeline.run.process_with_llm", return_value=_ES_SECTIONS),
+        patch("src.pipeline.run.translate_sections", return_value=_EN_SECTIONS) as mock_translate,
+        patch("src.pipeline.run.translate_title", side_effect=lambda t, src, tgt: f"EN {t}"),
         patch("src.pipeline.run.find_or_create_channel", return_value="channel-es-001"),
         patch("src.pipeline.run.enrich_transcript"),
         patch("src.pipeline.run.create_sibling_transcript") as mock_sibling,
@@ -55,9 +63,12 @@ def test_en_job_with_spanish_fallback(make_job) -> None:
 
     # EN upload should happen
     assert mock_upload.call_count == 2  # once for es sibling, once for en
+    mock_translate.assert_called_once_with(_ES_SECTIONS, "es", "en")
 
 
-def test_en_job_with_en_subs_no_translation(make_job, sample_segments, sample_metadata) -> None:
+def test_en_job_with_en_subs_no_translation(
+    make_job, sample_segments, sample_metadata, sample_sections
+) -> None:
     """When EN subs are available directly, no translation or sibling should happen."""
     job: TranscriptJob = make_job(language="en")
 
@@ -69,6 +80,7 @@ def test_en_job_with_en_subs_no_translation(make_job, sample_segments, sample_me
 
     with (
         patch("src.pipeline.run.fetch_transcript", return_value=fetch_result),
+        patch("src.pipeline.run.process_with_llm", return_value=sample_sections),
         patch("src.pipeline.run.find_or_create_channel", return_value="channel-001"),
         patch("src.pipeline.run.enrich_transcript"),
         patch("src.pipeline.run.create_sibling_transcript") as mock_sibling,
